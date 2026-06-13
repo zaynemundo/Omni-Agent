@@ -20,6 +20,25 @@ const RESEARCHER_MODEL = "llama-3.3-70b-versatile";
 const CODER_MODEL = "llama-3.3-70b-versatile";
 const FAST_MODEL = "llama-3.1-8b-instant";
 
+function getAiErrorMessage(err: unknown): string {
+  const error = err as { status?: number; message?: string };
+
+  if (error.status === 401) {
+    return "Groq rejected the API key. Replace GROQ_API_KEY in Replit Secrets, then restart the app.";
+  }
+  if (error.status === 403) {
+    return "This Groq project does not have permission to use the selected model.";
+  }
+  if (error.status === 429) {
+    return "Groq's free-tier rate limit has been reached. Wait briefly and try again.";
+  }
+  if (error.status === 404 || error.message?.toLowerCase().includes("model")) {
+    return "The configured Groq model is unavailable. Check the model settings and try again.";
+  }
+
+  return "Groq could not generate a response. Check the Replit console for details.";
+}
+
 // ── Search Cache (5-minute TTL) ───────────────────────────────────────────────
 interface CacheEntry {
   results: { title: string; url: string; snippet: string }[];
@@ -485,6 +504,10 @@ Today: ${today}${memoryBlock}`,
       }
     }
 
+    if (!fullResponse.trim()) {
+      throw new Error("Groq returned an empty response");
+    }
+
     await db.insert(messages).values({
       conversationId,
       role: "assistant",
@@ -509,7 +532,14 @@ Today: ${today}${memoryBlock}`,
     }
   } catch (err) {
     req.log.error({ err }, "Error in agent pipeline");
-    send({ error: "Failed to get AI response. Please try again." });
+    const errorMessage = getAiErrorMessage(err);
+    await db.insert(messages).values({
+      conversationId,
+      role: "assistant",
+      content: `**AI service error:** ${errorMessage}`,
+      model: `${CODER_MODEL}|${agentMode}`,
+    }).catch((dbErr) => req.log.error({ err: dbErr }, "Failed to save AI error message"));
+    send({ error: errorMessage });
     res.end();
   }
 });
