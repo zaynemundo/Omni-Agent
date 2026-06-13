@@ -346,6 +346,7 @@ router.post("/openrouter/conversations/:id/messages", async (req, res): Promise<
   const send = (data: object) => res.write(`data: ${JSON.stringify(data)}\n\n`);
 
   const agentMode = classifyAgent(content);
+  send({ phase: "thinking" });
   send({ phase: "agent_mode", mode: agentMode });
 
   const storedMemories = await loadMemories();
@@ -368,6 +369,8 @@ router.post("/openrouter/conversations/:id/messages", async (req, res): Promise<
       const totalHits = searchBatches.reduce((n, b) => n + b.results.length, 0);
       searchContext = formatSearchResults(searchBatches);
 
+      const flatResults = searchBatches.flatMap((b) => b.results).slice(0, 12);
+      send({ phase: "search_results", results: flatResults });
       send({ phase: "searching_done", resultCount: totalHits });
       send({ phase: "researching", agent: "Research Agent" });
 
@@ -485,7 +488,7 @@ Today: ${today}${memoryBlock}`,
       conversationId,
       role: "assistant",
       content: fullResponse,
-      model: CODER_MODEL,
+      model: `${CODER_MODEL}|${agentMode}`,
     });
 
     if (conv.title === "New Conversation" || conv.title.startsWith("New Conversation")) {

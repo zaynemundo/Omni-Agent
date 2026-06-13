@@ -16,6 +16,7 @@ import type { OpenrouterMessage } from "@workspace/api-client-react/src/generate
 
 import { Sidebar } from "@/components/chat/sidebar";
 import { ChatMessage } from "@/components/chat/message";
+import type { SearchResult } from "@/components/chat/message";
 import { MessageInput } from "@/components/chat/message-input";
 import { EmptyState } from "@/components/chat/empty-state";
 import { AgentSteps } from "@/components/chat/agent-steps";
@@ -31,12 +32,14 @@ export default function ChatPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
-  const [streamingPhase, setStreamingPhase] = useState<"idle" | "searching" | "researching" | "generating">("idle");
+  const [streamingPhase, setStreamingPhase] = useState<"idle" | "thinking" | "searching" | "researching" | "generating">("idle");
   const [streamingAgent, setStreamingAgent] = useState("");
   const [agentMode, setAgentMode] = useState<"general" | "code" | "research">("general");
   const [searchCount, setSearchCount] = useState(0);
   const [researchContent, setResearchContent] = useState("");
   const [thoughtsMap, setThoughtsMap] = useState<Record<number, string>>({});
+  const [sourcesMap, setSourcesMap] = useState<Record<number, SearchResult[]>>({});
+  const streamingSourcesRef = useRef<SearchResult[]>([]);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -102,6 +105,7 @@ export default function ChatPage() {
     setSearchCount(0);
     setStreamingMessageId(Date.now() + 1);
     setResearchContent("");
+    streamingSourcesRef.current = [];
 
     try {
       const response = await fetch(`/api/openrouter/conversations/${convId}/messages`, {
@@ -143,11 +147,15 @@ export default function ChatPage() {
                 if (data.done) {
                   break;
                 }
-                if (data.phase === "agent_mode") {
+                if (data.phase === "thinking") {
+                  setStreamingPhase("thinking");
+                } else if (data.phase === "agent_mode") {
                   setAgentMode(data.mode || "general");
                 } else if (data.phase === "searching") {
                   setStreamingPhase("searching");
                   setSearchCount(data.count || 3);
+                } else if (data.phase === "search_results") {
+                  streamingSourcesRef.current = data.results || [];
                 } else if (data.phase === "searching_done") {
                   // stay in searching phase until researching starts
                 } else if (data.phase === "researching") {
@@ -177,15 +185,20 @@ export default function ChatPage() {
       setStreamingPhase("idle");
       const savedMsgId = streamingMessageId;
       const savedResearch = researchContent;
+      const savedSources = streamingSourcesRef.current;
       await queryClient.invalidateQueries({ queryKey: getListOpenrouterMessagesQueryKey(convId) });
       
-      if (savedMsgId && savedResearch) {
-        const freshMsgs = queryClient.getQueryData<OpenrouterMessage[]>(
-          getListOpenrouterMessagesQueryKey(convId)
-        );
-        const lastAssistant = freshMsgs?.filter(m => m.role === "assistant").at(-1);
-        const targetId = lastAssistant?.id ?? savedMsgId;
+      const freshMsgs = queryClient.getQueryData<OpenrouterMessage[]>(
+        getListOpenrouterMessagesQueryKey(convId)
+      );
+      const lastAssistant = freshMsgs?.filter(m => m.role === "assistant").at(-1);
+      const targetId = lastAssistant?.id ?? savedMsgId;
+
+      if (savedMsgId && savedResearch && targetId) {
         setThoughtsMap((prev) => ({ ...prev, [targetId]: savedResearch }));
+      }
+      if (savedSources.length > 0 && targetId) {
+        setSourcesMap((prev) => ({ ...prev, [targetId]: savedSources }));
       }
       
       if (!currentId && convId) {
@@ -202,7 +215,7 @@ export default function ChatPage() {
       conversationId: currentId || 0,
       role: "assistant",
       content: streamingContent,
-      model: "nex-agi/nex-n2-pro:free",
+      model: `nex-agi/nex-n2-pro:free|${agentMode}`,
       createdAt: new Date().toISOString(),
     });
   }
@@ -271,6 +284,7 @@ export default function ChatPage() {
                         ? researchContent || undefined
                         : thoughtsMap[msg.id]
                     }
+                    sources={sourcesMap[msg.id]}
                     onQuickSend={!isStreaming ? handleSend : undefined}
                   />
                 ))}

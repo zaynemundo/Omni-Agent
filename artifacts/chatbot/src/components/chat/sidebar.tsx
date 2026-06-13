@@ -1,8 +1,8 @@
-import { Plus, MessageSquare, Trash2, Edit2, Check, X, MoreHorizontal, Activity } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Edit2, Check, X, MoreHorizontal, Activity, Brain, ChevronDown, ChevronRight, Pencil } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   useListOpenrouterConversations,
   useDeleteOpenrouterConversation,
@@ -18,6 +18,137 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { BacktestPanel } from "./backtest-panel";
+
+interface Memory {
+  id: number;
+  key: string;
+  value: string;
+  updatedAt: string;
+}
+
+function MemoryPanel() {
+  const [open, setOpen] = useState(false);
+  const [memories, setMemories] = useState<Memory[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [editingKey, setEditingKey] = useState<string | null>(null);
+  const [editVal, setEditVal] = useState("");
+
+  const fetchMemories = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("/api/memory");
+      const data = await res.json() as Memory[];
+      setMemories(data);
+    } catch { /* ignore */ } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (open) fetchMemories();
+  }, [open]);
+
+  const handleDelete = async (key: string) => {
+    await fetch(`/api/memory/${encodeURIComponent(key)}`, { method: "DELETE" });
+    setMemories((prev) => prev.filter((m) => m.key !== key));
+  };
+
+  const handleSaveEdit = async (key: string) => {
+    if (!editVal.trim()) return;
+    await fetch(`/api/memory/${encodeURIComponent(key)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ value: editVal.trim() }),
+    });
+    setMemories((prev) => prev.map((m) => m.key === key ? { ...m, value: editVal.trim() } : m));
+    setEditingKey(null);
+  };
+
+  return (
+    <div className="border-t border-sidebar-border">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-2 px-4 py-3 text-sm text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-colors"
+      >
+        <Brain className="h-4 w-4 text-violet-400" />
+        <span className="flex-1 text-left font-medium">Memory</span>
+        {memories.length > 0 && !open && (
+          <span className="text-xs bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-full">
+            {memories.length}
+          </span>
+        )}
+        {open
+          ? <ChevronDown className="h-3.5 w-3.5" />
+          : <ChevronRight className="h-3.5 w-3.5" />}
+      </button>
+
+      {open && (
+        <div className="px-3 pb-3">
+          {loading ? (
+            <div className="text-xs text-sidebar-foreground/40 px-2 py-2">Loading...</div>
+          ) : memories.length === 0 ? (
+            <div className="text-xs text-sidebar-foreground/40 px-2 py-3 text-center">
+              <Brain className="h-5 w-5 mx-auto mb-1 opacity-30" />
+              No memories yet.<br />
+              <span className="text-sidebar-foreground/30">Facts are learned automatically.</span>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-1 max-h-48 overflow-y-auto">
+              {memories.map((m) => (
+                <div
+                  key={m.key}
+                  className="group flex items-start gap-2 rounded-md px-2 py-1.5 hover:bg-sidebar-accent transition-colors"
+                >
+                  {editingKey === m.key ? (
+                    <div className="flex flex-1 items-center gap-1">
+                      <input
+                        autoFocus
+                        value={editVal}
+                        onChange={(e) => setEditVal(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleSaveEdit(m.key);
+                          if (e.key === "Escape") setEditingKey(null);
+                        }}
+                        className="flex-1 text-xs bg-background border border-border rounded px-1.5 py-1 focus:outline-none focus:ring-1 focus:ring-ring"
+                      />
+                      <button onClick={() => handleSaveEdit(m.key)} className="text-green-400 hover:text-green-300">
+                        <Check className="h-3 w-3" />
+                      </button>
+                      <button onClick={() => setEditingKey(null)} className="text-muted-foreground hover:text-foreground">
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] font-mono text-muted-foreground/60 block truncate">{m.key}</span>
+                        <span className="text-xs text-sidebar-foreground/85 truncate block">{m.value}</span>
+                      </div>
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+                        <button
+                          onClick={() => { setEditingKey(m.key); setEditVal(m.value); }}
+                          className="text-muted-foreground hover:text-foreground p-0.5"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(m.key)}
+                          className="text-muted-foreground hover:text-red-400 p-0.5"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
@@ -39,9 +170,7 @@ export function Sidebar() {
     deleteConversation.mutate({ id }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListOpenrouterConversationsQueryKey() });
-        if (currentId === id) {
-          setLocation("/");
-        }
+        if (currentId === id) setLocation("/");
       }
     });
   };
@@ -111,10 +240,10 @@ export function Sidebar() {
                   <Input 
                     autoFocus
                     value={editTitle}
-                    onChange={e => setEditTitle(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') saveEdit();
-                      if (e.key === 'Escape') cancelEdit(e as any);
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEdit();
+                      if (e.key === "Escape") cancelEdit(e as any);
                     }}
                     className="h-7 text-sm px-2 bg-background border-none focus-visible:ring-1"
                   />
@@ -134,11 +263,8 @@ export function Sidebar() {
                   >
                     <div className="flex items-center gap-2 overflow-hidden flex-1">
                       <MessageSquare className="h-4 w-4 shrink-0 opacity-70" />
-                      <div className="truncate text-left flex-1">
-                        {conv.title}
-                      </div>
+                      <div className="truncate text-left flex-1">{conv.title}</div>
                     </div>
-                    
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                         <Button
@@ -168,8 +294,11 @@ export function Sidebar() {
           )}
         </div>
       </ScrollArea>
+
+      {/* Memory Panel */}
+      <MemoryPanel />
       
-      <div className="p-4 border-t border-sidebar-border mt-auto">
+      <div className="p-4 border-t border-sidebar-border">
         <div className="flex items-center gap-3 px-2 py-2">
           <div className="h-8 w-8 rounded-full bg-sidebar-primary/20 flex items-center justify-center text-sidebar-primary font-bold">
             U
