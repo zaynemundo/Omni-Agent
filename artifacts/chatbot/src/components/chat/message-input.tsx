@@ -37,13 +37,13 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
 
   return (
     <div className="relative flex w-full flex-col">
-      <div className="relative flex w-full items-end gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-[0_12px_36px_rgba(0,0,0,0.24)] transition-colors focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-ring/30">
+      <div className="relative flex w-full items-end gap-3 rounded-[24px] border border-transparent bg-card px-4 py-3 shadow-[0_2px_14px_rgba(0,0,0,0.22)] transition-colors focus-within:border-border">
         <Textarea
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask about a strategy, market, backtest, or MQL5..."
+          placeholder="Message NexChat"
           className="min-h-[28px] max-h-[200px] w-full resize-none border-0 bg-transparent p-0 py-1 text-sm leading-5 focus-visible:ring-0 placeholder:text-muted-foreground/60"
           rows={1}
           disabled={disabled}
@@ -52,7 +52,7 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
         <div className="flex flex-col justify-end">
           <Button
             size="icon"
-            className="h-9 w-9 rounded-md transition-colors"
+            className="h-8 w-8 rounded-full bg-foreground text-background transition-colors hover:bg-foreground/85"
             onClick={handleSend}
             disabled={!content.trim() || disabled}
           >
@@ -65,9 +65,8 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
           </Button>
         </div>
       </div>
-      <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-muted-foreground/70">
-        <span>Enter to send, Shift + Enter for a new line</span>
-        <span className="hidden sm:inline">Verify important market information</span>
+      <div className="mt-2 text-center text-[10px] text-muted-foreground/70">
+        NexChat can make mistakes. Check important information.
       </div>
     </div>
   );

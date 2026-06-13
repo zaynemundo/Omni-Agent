@@ -61,36 +61,36 @@
 }
 
 :root {
-  --background: 220 18% 7%;
-  --foreground: 210 20% 96%;
-  --card: 220 16% 10%;
-  --card-foreground: 210 20% 96%;
-  --card-border: 215 14% 18%;
-  --popover: 220 16% 10%;
-  --popover-foreground: 210 20% 96%;
-  --popover-border: 215 14% 20%;
-  --primary: 187 82% 46%;
-  --primary-foreground: 220 24% 7%;
-  --secondary: 216 14% 14%;
-  --secondary-foreground: 210 20% 94%;
-  --muted: 216 14% 13%;
-  --muted-foreground: 215 12% 63%;
-  --accent: 151 62% 45%;
-  --accent-foreground: 220 24% 7%;
+  --background: 0 0% 13%;
+  --foreground: 0 0% 95%;
+  --card: 0 0% 18%;
+  --card-foreground: 0 0% 95%;
+  --card-border: 0 0% 25%;
+  --popover: 0 0% 18%;
+  --popover-foreground: 0 0% 95%;
+  --popover-border: 0 0% 28%;
+  --primary: 0 0% 96%;
+  --primary-foreground: 0 0% 10%;
+  --secondary: 0 0% 20%;
+  --secondary-foreground: 0 0% 94%;
+  --muted: 0 0% 18%;
+  --muted-foreground: 0 0% 65%;
+  --accent: 160 84% 39%;
+  --accent-foreground: 0 0% 100%;
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 98%;
-  --border: 215 14% 18%;
-  --input: 215 14% 20%;
-  --ring: 187 82% 46%;
+  --border: 0 0% 25%;
+  --input: 0 0% 28%;
+  --ring: 0 0% 70%;
 
-  --sidebar: 222 18% 8%;
-  --sidebar-foreground: 210 20% 96%;
-  --sidebar-border: 215 14% 16%;
-  --sidebar-primary: 187 82% 46%;
-  --sidebar-primary-foreground: 220 24% 7%;
-  --sidebar-accent: 216 15% 14%;
-  --sidebar-accent-foreground: 210 20% 98%;
-  --sidebar-ring: 187 82% 46%;
+  --sidebar: 0 0% 9%;
+  --sidebar-foreground: 0 0% 94%;
+  --sidebar-border: 0 0% 15%;
+  --sidebar-primary: 0 0% 96%;
+  --sidebar-primary-foreground: 0 0% 10%;
+  --sidebar-accent: 0 0% 15%;
+  --sidebar-accent-foreground: 0 0% 98%;
+  --sidebar-ring: 0 0% 65%;
 
   --radius: 0.45rem;
   --app-font-sans: 'Inter', 'Segoe UI', sans-serif;

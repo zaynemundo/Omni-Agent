@@ -1,4 +1,4 @@
-import { Plus, MessageSquare, Trash2, Edit2, Check, X, MoreHorizontal, Activity, Brain, ChevronDown, ChevronRight, Pencil, LineChart, UserRound } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Edit2, Check, X, MoreHorizontal, Activity, Brain, ChevronDown, ChevronRight, Pencil, PanelLeft, UserRound } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -206,21 +206,20 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-16 items-center px-4">
-        <div className="flex items-center gap-3 px-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
-            <LineChart className="h-4 w-4" />
+      <div className="flex h-14 items-center justify-between px-3">
+        <div className="flex items-center gap-2 px-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-sidebar-foreground text-xs font-semibold text-sidebar">
+            N
           </span>
-          <div>
-            <div className="text-sm font-semibold text-sidebar-foreground">NexChat</div>
-            <div className="text-[10px] text-sidebar-foreground/45">Trading intelligence</div>
-          </div>
+          <div className="text-sm font-semibold text-sidebar-foreground">NexChat</div>
         </div>
+        <PanelLeft className="h-4 w-4 text-sidebar-foreground/50" />
       </div>
       
-      <div className="space-y-2 px-3 pb-4">
+      <div className="space-y-1 px-2 pb-3">
         <Button 
-          className="w-full justify-start gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
+          variant="ghost"
+          className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent"
           onClick={() => setLocation("/")}
         >
           <Plus className="h-4 w-4" />
@@ -228,7 +227,7 @@ export function Sidebar() {
         </Button>
         <Button 
           variant="outline"
-          className="w-full justify-start gap-2 border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          className="w-full justify-start gap-3 border-0 bg-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           onClick={() => setBacktestOpen(true)}
         >
           <Activity className="h-4 w-4" />
@@ -238,13 +237,13 @@ export function Sidebar() {
 
       <ScrollArea className="flex-1">
         <div className="flex flex-col gap-1 px-2 py-2">
-          <div className="mb-2 px-3 text-[10px] font-medium uppercase text-sidebar-foreground/40">
-            Recent conversations
+          <div className="mb-1 px-3 pt-2 text-xs font-medium text-sidebar-foreground/45">
+            Chats
           </div>
           {isLoading ? (
             <div className="px-4 py-2 text-sm text-sidebar-foreground/50">Loading...</div>
           ) : conversationList.length === 0 ? (
-            <div className="px-4 py-2 text-sm text-sidebar-foreground/50">No conversations</div>
+            <div className="px-3 py-2 text-xs text-sidebar-foreground/40">No conversations yet</div>
           ) : (
             conversationList.map((conv) => (
               editingId === conv.id ? (
@@ -274,7 +273,7 @@ export function Sidebar() {
                     }`}
                   >
                     <div className="flex items-center gap-2 overflow-hidden flex-1">
-                      <MessageSquare className="h-4 w-4 shrink-0 opacity-70" />
+                      <MessageSquare className="h-4 w-4 shrink-0 opacity-50" />
                       <div className="truncate text-left flex-1">{conv.title}</div>
                     </div>
                     <DropdownMenu>
@@ -309,14 +308,14 @@ export function Sidebar() {
 
       <MemoryPanel />
       
-      <div className="border-t border-sidebar-border p-3">
-        <div className="flex items-center gap-3 rounded-md px-2 py-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-accent text-sidebar-foreground/70">
+      <div className="p-2">
+        <div className="flex items-center gap-3 rounded-md px-3 py-2 hover:bg-sidebar-accent">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-sidebar-accent text-sidebar-foreground/70">
             <UserRound className="h-4 w-4" />
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-medium">Local workspace</div>
-            <div className="truncate text-[10px] text-sidebar-foreground/40">Private conversation history</div>
+            <div className="text-sm font-medium">User</div>
+            <div className="truncate text-[10px] text-sidebar-foreground/40">Groq workspace</div>
           </div>
         </div>
       </div>

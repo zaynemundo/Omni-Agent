@@ -4,10 +4,9 @@ import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
-  Check, Copy, User, Bot, ChevronRight, ChevronDown, Lightbulb,
+  Check, Copy, Bot, ChevronRight, ChevronDown, Lightbulb,
   Search, Code2, MessageCircle, ExternalLink, Play, Loader2, Terminal,
 } from "lucide-react";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import type { OpenrouterMessage } from "@workspace/api-client-react";
 
@@ -308,31 +307,23 @@ export function ChatMessage({ message, isStreaming, thoughts, sources, onQuickSe
 
   return (
     <div
-      className={`group relative flex gap-4 px-4 py-6 text-sm md:gap-6 md:px-6 md:py-8 ${
-        isUser ? "bg-background" : "bg-muted/30"
+      className={`group relative mx-auto flex w-full max-w-3xl gap-4 px-4 py-5 text-sm md:px-6 ${
+        isUser ? "justify-end" : ""
       }`}
     >
-      {/* Avatar */}
-      <div className="flex shrink-0 flex-col items-center">
+      {!isUser && <div className="flex shrink-0 flex-col items-center">
         <div
-          className={`flex h-8 w-8 items-center justify-center rounded-md border ${
-            isUser
-              ? "bg-background border-border text-muted-foreground"
-              : "bg-primary border-primary text-primary-foreground shadow-sm"
-          }`}
+          className="flex h-8 w-8 items-center justify-center rounded-full bg-foreground text-background"
         >
-          {isUser ? <User className="h-5 w-5" /> : <Bot className="h-5 w-5" />}
+          <Bot className="h-4 w-4" />
         </div>
-      </div>
+      </div>}
 
-      <div className="flex min-w-0 flex-1 flex-col gap-2">
+      <div className={`flex min-w-0 flex-col gap-2 ${isUser ? "max-w-[80%] rounded-[20px] bg-card px-4 py-2.5" : "flex-1"}`}>
         {/* Header */}
-        <div className="flex items-center gap-2 flex-wrap">
+        {!isUser && <div className="flex items-center gap-2 flex-wrap">
           <span className="font-semibold text-foreground">
-            {isUser ? "You" : "NexChat"}
-          </span>
-          <span className="text-xs text-muted-foreground">
-            {format(new Date(message.createdAt), "HH:mm")}
+            NexChat
           </span>
           {!isUser && message.model && (
             <span className={`inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full ${badge.bg} ${badge.text}`}>
@@ -340,7 +331,7 @@ export function ChatMessage({ message, isStreaming, thoughts, sources, onQuickSe
               {badge.label}
             </span>
           )}
-        </div>
+        </div>}
 
         {/* Thoughts / Think panel */}
         {thoughts && (

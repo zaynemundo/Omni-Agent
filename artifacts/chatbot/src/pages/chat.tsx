@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Circle, Menu } from "lucide-react";
+import { ChevronDown, Menu } from "lucide-react";
 import { 
   useGetOpenrouterConversation,
   useListOpenrouterMessages,
@@ -9,8 +9,6 @@ import {
   getListOpenrouterConversationsQueryKey,
   getGetOpenrouterConversationQueryKey,
   getListOpenrouterMessagesQueryKey,
-  useSearchWeb,
-  useFetchPage
 } from "@workspace/api-client-react";
 import type { OpenrouterMessage } from "@workspace/api-client-react";
 
@@ -228,25 +226,9 @@ export default function ChatPage() {
     });
   }
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const searchWeb = useSearchWeb();
-  const fetchPage = useFetchPage();
-
-  const handleTestSearch = () => {
-    if (searchQuery) {
-      searchWeb.mutate({ data: { query: searchQuery } });
-    }
-  };
-
-  const handleTestFetch = () => {
-    if (searchQuery.startsWith("http")) {
-      fetchPage.mutate({ data: { url: searchQuery } });
-    }
-  };
-
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background text-foreground">
-      <header className="flex h-16 shrink-0 items-center border-b border-border bg-background/95 px-4 backdrop-blur">
+      <header className="flex h-14 shrink-0 items-center bg-background px-3 md:px-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <Sheet>
             <SheetTrigger asChild>
@@ -260,26 +242,20 @@ export default function ChatPage() {
             </SheetContent>
           </Sheet>
           
-          <div className="min-w-0">
-            <div className="truncate text-sm font-medium text-foreground">
-              {conversation?.title || "New workspace"}
+          <div className="flex min-w-0 items-center gap-1.5">
+            <div className="truncate text-base font-semibold text-foreground">
+              NexChat
             </div>
-            <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
-              <Circle className="h-2 w-2 fill-emerald-400 text-emerald-400" />
-              Groq connected
-            </div>
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </div>
         </div>
-        
-        <div className="flex items-center text-xs text-muted-foreground hidden">
-           <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-           <button onClick={handleTestSearch}>Search</button>
-           <button onClick={handleTestFetch}>Fetch</button>
+        <div className="max-w-[45%] truncate text-xs text-muted-foreground">
+          {conversation?.title || ""}
         </div>
       </header>
 
       <div className="flex flex-1 overflow-hidden min-w-0">
-        <div className="hidden w-[280px] shrink-0 border-r border-border md:block">
+        <div className="hidden w-[260px] shrink-0 md:block">
           <Sidebar />
         </div>
 
@@ -288,7 +264,7 @@ export default function ChatPage() {
             {!currentId && displayMessages.length === 0 ? (
               <EmptyState onSelectPrompt={handleSend} />
             ) : (
-              <div>
+              <div className="pb-28">
                 {displayMessages.map((msg) => (
                   <ChatMessage 
                     key={msg.id} 
@@ -308,8 +284,8 @@ export default function ChatPage() {
             )}
           </div>
 
-          <div className="w-full shrink-0 border-t border-border/60 bg-background/95 px-4 pb-3 pt-3 backdrop-blur md:px-8">
-            <div className="mx-auto w-full max-w-4xl">
+          <div className="w-full shrink-0 bg-background px-3 pb-2 pt-3 md:px-8">
+            <div className="mx-auto w-full max-w-3xl">
               {isStreaming && streamingPhase !== "idle" && (
                 <AgentSteps
                   phase={streamingPhase}
