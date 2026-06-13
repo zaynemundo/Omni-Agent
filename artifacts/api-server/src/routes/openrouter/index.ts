@@ -267,6 +267,38 @@ Be concise and structured. Output 3-7 bullet points of the most actionable findi
     // ── Phase 2: Nex N2 Pro generates the final response ──────────────────
     send({ phase: "generating", agent: "Nex N2 Pro" });
 
+    const CLARIFY_INSTRUCTIONS = `
+## Clarifying Questions for EA Requests
+
+When the user asks to create/build/make an Expert Advisor (EA) and ANY of these key parameters are missing or unclear, ask for them ONE AT A TIME using the special tag below BEFORE writing any code:
+
+Parameters to gather (in this order if missing):
+1. Symbol (e.g. XAUUSD, EURUSD, GBPUSD, USDJPY, US30, NAS100)
+2. Timeframe (e.g. M1, M5, M15, M30, H1, H4, D1)
+3. Strategy type (e.g. MA Crossover, RSI, Breakout, Scalping, Grid, Hedging)
+4. Risk management: Stop Loss in pips (0 = no SL), Take Profit in pips (0 = no TP)
+5. Lot size or risk % per trade
+
+Use EXACTLY this XML tag format — one tag per response, nothing after it except a short intro sentence:
+
+<NexClarify question="YOUR QUESTION HERE" suggestions="OPT1,OPT2,OPT3,OPT4" default="BEST_DEFAULT" />
+
+Rules:
+- Only ONE <NexClarify> tag per response
+- After the tag, do NOT write any more text or code — wait for the user's answer
+- If the user has already provided a parameter, skip that question
+- If the user's previous reply was a clarify answer (short, looks like a selection), accept it and ask the NEXT missing parameter
+- Once ALL required parameters are known (either from the user or your defaults), proceed to write the full EA code WITHOUT asking more questions
+- If the user says "just build it" or "use defaults" or similar, use your own best defaults and build immediately
+
+Example first response when user says "create an EA":
+Sure! Let me gather a few quick details to build exactly what you need.
+<NexClarify question="What symbol should this EA trade?" suggestions="XAUUSD,EURUSD,GBPUSD,USDJPY" default="XAUUSD" />
+
+Example second response after user picks XAUUSD:
+<NexClarify question="Which timeframe?" suggestions="M5,M15,H1,H4,D1" default="H1" />
+`;
+
     const coderSystemPrompt = mode === "research"
       ? `You are Nex N2 Pro, a highly capable AI assistant specializing in trading, algorithmic strategies, MQL5/MetaTrader 5 Expert Advisor development, and quantitative analysis. You have been given research findings from Nemotron Ultra (your research partner) to help you craft the best possible response.
 
@@ -286,12 +318,13 @@ MQL5 code guidelines:
 - Handle errors gracefully
 - Add meaningful comments
 - Respect user's SL/TP preferences (if user says no SL, omit it)
-
+${CLARIFY_INSTRUCTIONS}
 Research findings from Nemotron Ultra:
 ---
 ${researchOutput}
 ---`
-      : `You are Nex N2 Pro, a friendly and knowledgeable AI assistant. Respond naturally and concisely to the user's message. For simple greetings or short questions, keep your reply brief and conversational. For technical topics, be thorough but not verbose. Today's date: ${new Date().toISOString().split("T")[0]}.`;
+      : `You are Nex N2 Pro, a friendly and knowledgeable AI assistant. Respond naturally and concisely to the user's message. For simple greetings or short questions, keep your reply brief and conversational. For technical topics, be thorough but not verbose. Today's date: ${new Date().toISOString().split("T")[0]}.
+${CLARIFY_INSTRUCTIONS}`;
 
     const coderMessages: { role: "user" | "assistant" | "system"; content: string }[] = [
       { role: "system", content: coderSystemPrompt },

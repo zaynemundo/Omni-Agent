@@ -259,6 +259,7 @@ export default function ChatPage() {
                         ? researchContent || undefined
                         : thoughtsMap[msg.id]
                     }
+                    onQuickSend={!isStreaming ? handleSend : undefined}
                   />
                 ))}
                 <div ref={messagesEndRef} className="h-px" />
