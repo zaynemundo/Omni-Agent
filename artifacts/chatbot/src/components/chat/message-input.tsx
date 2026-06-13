@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
-import { Send, Loader2 } from "lucide-react";
+import { ArrowUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -36,39 +36,38 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
   };
 
   return (
-    <div className="relative flex w-full flex-col p-4 bg-background">
-      <div className="relative flex w-full items-end gap-2 rounded-xl border border-border bg-muted/30 px-3 py-3 focus-within:ring-1 focus-within:ring-ring">
+    <div className="relative flex w-full flex-col">
+      <div className="relative flex w-full items-end gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-[0_12px_36px_rgba(0,0,0,0.24)] transition-colors focus-within:border-primary/50 focus-within:ring-1 focus-within:ring-ring/30">
         <Textarea
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Send a message..."
-          className="min-h-[24px] max-h-[200px] w-full resize-none border-0 bg-transparent p-0 text-sm focus-visible:ring-0 placeholder:text-muted-foreground/70"
+          placeholder="Ask about a strategy, market, backtest, or MQL5..."
+          className="min-h-[28px] max-h-[200px] w-full resize-none border-0 bg-transparent p-0 py-1 text-sm leading-5 focus-visible:ring-0 placeholder:text-muted-foreground/60"
           rows={1}
           disabled={disabled}
         />
 
-        <div className="flex flex-col justify-end pb-1">
+        <div className="flex flex-col justify-end">
           <Button
             size="icon"
-            className="h-8 w-8 rounded-md transition-all"
+            className="h-9 w-9 rounded-md transition-colors"
             onClick={handleSend}
             disabled={!content.trim() || disabled}
           >
             {disabled ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Send className="h-4 w-4" />
+              <ArrowUp className="h-4 w-4" />
             )}
             <span className="sr-only">Send Message</span>
           </Button>
         </div>
       </div>
-      <div className="text-center mt-2">
-        <span className="text-[10px] text-muted-foreground">
-          NexChat can make mistakes. Consider verifying important information.
-        </span>
+      <div className="mt-2 flex items-center justify-between px-1 text-[10px] text-muted-foreground/70">
+        <span>Enter to send, Shift + Enter for a new line</span>
+        <span className="hidden sm:inline">Verify important market information</span>
       </div>
     </div>
   );

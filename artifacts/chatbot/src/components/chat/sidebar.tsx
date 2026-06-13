@@ -1,4 +1,4 @@
-import { Plus, MessageSquare, Trash2, Edit2, Check, X, MoreHorizontal, Activity, Brain, ChevronDown, ChevronRight, Pencil } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Edit2, Check, X, MoreHorizontal, Activity, Brain, ChevronDown, ChevronRight, Pencil, LineChart, UserRound } from "lucide-react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -157,6 +157,7 @@ export function Sidebar() {
   const { data: conversations, isLoading } = useListOpenrouterConversations();
   const deleteConversation = useDeleteOpenrouterConversation();
   const renameConversation = useRenameOpenrouterConversation();
+  const conversationList = Array.isArray(conversations) ? conversations : [];
 
   const currentId = location.startsWith("/c/") ? Number(location.split("/c/")[1]) : null;
 
@@ -204,14 +205,22 @@ export function Sidebar() {
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-sidebar border-r border-sidebar-border text-sidebar-foreground">
-      <div className="p-4 flex items-center justify-between">
-        <span className="font-bold text-lg tracking-tight px-2 text-sidebar-primary">NexChat</span>
+    <div className="flex h-full w-full flex-col bg-sidebar text-sidebar-foreground">
+      <div className="flex h-16 items-center px-4">
+        <div className="flex items-center gap-3 px-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-primary text-sidebar-primary-foreground">
+            <LineChart className="h-4 w-4" />
+          </span>
+          <div>
+            <div className="text-sm font-semibold text-sidebar-foreground">NexChat</div>
+            <div className="text-[10px] text-sidebar-foreground/45">Trading intelligence</div>
+          </div>
+        </div>
       </div>
       
-      <div className="px-4 pb-4 space-y-2">
+      <div className="space-y-2 px-3 pb-4">
         <Button 
-          className="w-full justify-start gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 shadow-sm"
+          className="w-full justify-start gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
           onClick={() => setLocation("/")}
         >
           <Plus className="h-4 w-4" />
@@ -219,7 +228,7 @@ export function Sidebar() {
         </Button>
         <Button 
           variant="outline"
-          className="w-full justify-start gap-2"
+          className="w-full justify-start gap-2 border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           onClick={() => setBacktestOpen(true)}
         >
           <Activity className="h-4 w-4" />
@@ -228,13 +237,16 @@ export function Sidebar() {
       </div>
 
       <ScrollArea className="flex-1">
-        <div className="px-2 py-2 flex flex-col gap-1">
+        <div className="flex flex-col gap-1 px-2 py-2">
+          <div className="mb-2 px-3 text-[10px] font-medium uppercase text-sidebar-foreground/40">
+            Recent conversations
+          </div>
           {isLoading ? (
             <div className="px-4 py-2 text-sm text-sidebar-foreground/50">Loading...</div>
-          ) : conversations?.length === 0 ? (
+          ) : conversationList.length === 0 ? (
             <div className="px-4 py-2 text-sm text-sidebar-foreground/50">No conversations</div>
           ) : (
-            conversations?.map((conv) => (
+            conversationList.map((conv) => (
               editingId === conv.id ? (
                 <div key={conv.id} className="flex items-center gap-1 rounded-md px-2 py-1.5 bg-sidebar-accent">
                   <Input 
@@ -257,8 +269,8 @@ export function Sidebar() {
               ) : (
                 <Link key={conv.id} href={`/c/${conv.id}`}>
                   <div
-                    className={`group flex items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer ${
-                      currentId === conv.id ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "text-sidebar-foreground/80"
+                    className={`group flex min-h-10 items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer ${
+                      currentId === conv.id ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "text-sidebar-foreground/70"
                     }`}
                   >
                     <div className="flex items-center gap-2 overflow-hidden flex-1">
@@ -295,15 +307,17 @@ export function Sidebar() {
         </div>
       </ScrollArea>
 
-      {/* Memory Panel */}
       <MemoryPanel />
       
-      <div className="p-4 border-t border-sidebar-border">
-        <div className="flex items-center gap-3 px-2 py-2">
-          <div className="h-8 w-8 rounded-full bg-sidebar-primary/20 flex items-center justify-center text-sidebar-primary font-bold">
-            U
+      <div className="border-t border-sidebar-border p-3">
+        <div className="flex items-center gap-3 rounded-md px-2 py-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-accent text-sidebar-foreground/70">
+            <UserRound className="h-4 w-4" />
           </div>
-          <div className="text-sm font-medium">User</div>
+          <div className="min-w-0">
+            <div className="text-sm font-medium">Local workspace</div>
+            <div className="truncate text-[10px] text-sidebar-foreground/40">Private conversation history</div>
+          </div>
         </div>
       </div>
 

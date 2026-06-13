@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Menu } from "lucide-react";
+import { Circle, Menu } from "lucide-react";
 import { 
   useGetOpenrouterConversation,
   useListOpenrouterMessages,
@@ -12,7 +12,7 @@ import {
   useSearchWeb,
   useFetchPage
 } from "@workspace/api-client-react";
-import type { OpenrouterMessage } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { OpenrouterMessage } from "@workspace/api-client-react";
 
 import { Sidebar } from "@/components/chat/sidebar";
 import { ChatMessage } from "@/components/chat/message";
@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 export default function ChatPage() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const params = useParams<{ id?: string }>();
   const currentId = params.id ? Number(params.id) : null;
   const queryClient = useQueryClient();
@@ -237,9 +237,9 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full overflow-hidden bg-background text-foreground">
-      <header className="flex h-14 shrink-0 items-center border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="flex items-center gap-2 flex-1">
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-background text-foreground">
+      <header className="flex h-16 shrink-0 items-center border-b border-border bg-background/95 px-4 backdrop-blur">
+        <div className="flex min-w-0 flex-1 items-center gap-3">
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
@@ -252,8 +252,15 @@ export default function ChatPage() {
             </SheetContent>
           </Sheet>
           
-          <div className="font-bold text-lg tracking-tight md:hidden">NexChat</div>
-          <div className="font-bold text-lg tracking-tight hidden md:block w-full text-center">NexChat</div>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-medium text-foreground">
+              {conversation?.title || "New workspace"}
+            </div>
+            <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+              <Circle className="h-2 w-2 fill-emerald-400 text-emerald-400" />
+              Groq connected
+            </div>
+          </div>
         </div>
         
         <div className="flex items-center text-xs text-muted-foreground hidden">
@@ -264,14 +271,14 @@ export default function ChatPage() {
       </header>
 
       <div className="flex flex-1 overflow-hidden min-w-0">
-        <div className="hidden w-[260px] md:block shrink-0 border-r border-border">
+        <div className="hidden w-[280px] shrink-0 border-r border-border md:block">
           <Sidebar />
         </div>
 
         <div className="flex flex-1 flex-col min-w-0">
           <div className="flex-1 overflow-y-auto min-h-0 relative">
             {!currentId && displayMessages.length === 0 ? (
-              <EmptyState />
+              <EmptyState onSelectPrompt={handleSend} />
             ) : (
               <div>
                 {displayMessages.map((msg) => (
@@ -293,16 +300,18 @@ export default function ChatPage() {
             )}
           </div>
 
-          <div className="shrink-0 bg-background pt-2 p-4 md:px-8 max-w-4xl mx-auto w-full">
-            {isStreaming && streamingPhase !== "idle" && (
-              <AgentSteps
-                phase={streamingPhase}
-                researchContent={researchContent}
-                agentMode={agentMode}
-                searchCount={searchCount}
-              />
-            )}
-            <MessageInput onSend={handleSend} disabled={isStreaming} />
+          <div className="w-full shrink-0 border-t border-border/60 bg-background/95 px-4 pb-3 pt-3 backdrop-blur md:px-8">
+            <div className="mx-auto w-full max-w-4xl">
+              {isStreaming && streamingPhase !== "idle" && (
+                <AgentSteps
+                  phase={streamingPhase}
+                  researchContent={researchContent}
+                  agentMode={agentMode}
+                  searchCount={searchCount}
+                />
+              )}
+              <MessageInput onSend={handleSend} disabled={isStreaming} />
+            </div>
           </div>
         </div>
       </div>

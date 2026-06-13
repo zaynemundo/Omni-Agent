@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import type { OpenrouterMessage } from "@workspace/api-client-react/src/generated/api.schemas";
+import type { OpenrouterMessage } from "@workspace/api-client-react";
 
 export interface SearchResult {
   title: string;
