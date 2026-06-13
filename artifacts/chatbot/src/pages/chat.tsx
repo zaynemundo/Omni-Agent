@@ -31,8 +31,10 @@ export default function ChatPage() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
-  const [streamingPhase, setStreamingPhase] = useState<"idle" | "researching" | "generating">("idle");
+  const [streamingPhase, setStreamingPhase] = useState<"idle" | "searching" | "researching" | "generating">("idle");
   const [streamingAgent, setStreamingAgent] = useState("");
+  const [agentMode, setAgentMode] = useState<"general" | "code" | "research">("general");
+  const [searchCount, setSearchCount] = useState(0);
   const [researchContent, setResearchContent] = useState("");
   const [thoughtsMap, setThoughtsMap] = useState<Record<number, string>>({});
   
@@ -96,6 +98,8 @@ export default function ChatPage() {
     setStreamingContent("");
     setStreamingPhase("idle");
     setStreamingAgent("");
+    setAgentMode("general");
+    setSearchCount(0);
     setStreamingMessageId(Date.now() + 1);
     setResearchContent("");
 
@@ -139,9 +143,16 @@ export default function ChatPage() {
                 if (data.done) {
                   break;
                 }
-                if (data.phase === "researching") {
+                if (data.phase === "agent_mode") {
+                  setAgentMode(data.mode || "general");
+                } else if (data.phase === "searching") {
+                  setStreamingPhase("searching");
+                  setSearchCount(data.count || 3);
+                } else if (data.phase === "searching_done") {
+                  // stay in searching phase until researching starts
+                } else if (data.phase === "researching") {
                   setStreamingPhase("researching");
-                  setStreamingAgent(data.agent || "Nemotron Ultra");
+                  setStreamingAgent(data.agent || "Research Agent");
                 } else if (data.phase === "research_chunk") {
                   setResearchContent((prev) => prev + (data.content || ""));
                 } else if (data.phase === "generating") {
@@ -270,7 +281,12 @@ export default function ChatPage() {
 
           <div className="shrink-0 bg-background pt-2 p-4 md:px-8 max-w-4xl mx-auto w-full">
             {isStreaming && streamingPhase !== "idle" && (
-              <AgentSteps phase={streamingPhase} researchContent={researchContent} />
+              <AgentSteps
+                phase={streamingPhase}
+                researchContent={researchContent}
+                agentMode={agentMode}
+                searchCount={searchCount}
+              />
             )}
             <MessageInput onSend={handleSend} disabled={isStreaming} />
           </div>
