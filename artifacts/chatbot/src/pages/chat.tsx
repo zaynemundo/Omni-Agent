@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Menu } from "lucide-react";
+import { ChevronDown, Menu, PanelLeftOpen } from "lucide-react";
 import { 
   useGetOpenrouterConversation,
   useListOpenrouterMessages,
@@ -38,6 +38,8 @@ export default function ChatPage() {
   const [thoughtsMap, setThoughtsMap] = useState<Record<number, string>>({});
   const [sourcesMap, setSourcesMap] = useState<Record<number, SearchResult[]>>({});
   const streamingSourcesRef = useRef<SearchResult[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -230,7 +232,7 @@ export default function ChatPage() {
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background text-foreground">
       <header className="flex h-14 shrink-0 items-center bg-background px-3 md:px-4">
         <div className="flex min-w-0 flex-1 items-center gap-3">
-          <Sheet>
+          <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <Menu className="h-5 w-5" />
@@ -238,9 +240,21 @@ export default function ChatPage() {
               </Button>
             </SheetTrigger>
             <SheetContent side="left" className="p-0 w-[260px]">
-              <Sidebar />
+              <Sidebar onCollapse={() => setMobileSidebarOpen(false)} />
             </SheetContent>
           </Sheet>
+          {!sidebarOpen && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden md:inline-flex"
+              onClick={() => setSidebarOpen(true)}
+              title="Open sidebar"
+            >
+              <PanelLeftOpen className="h-5 w-5" />
+              <span className="sr-only">Open sidebar</span>
+            </Button>
+          )}
           
           <div className="flex min-w-0 items-center gap-1.5">
             <div className="truncate text-base font-semibold text-foreground">
@@ -255,9 +269,11 @@ export default function ChatPage() {
       </header>
 
       <div className="flex flex-1 overflow-hidden min-w-0">
-        <div className="hidden w-[260px] shrink-0 md:block">
-          <Sidebar />
-        </div>
+        {sidebarOpen && (
+          <div className="hidden w-[260px] shrink-0 md:block">
+            <Sidebar onCollapse={() => setSidebarOpen(false)} />
+          </div>
+        )}
 
         <div className="flex flex-1 flex-col min-w-0">
           <div className="flex-1 overflow-y-auto min-h-0 relative">

@@ -1,5 +1,5 @@
 import { Plus, MessageSquare, Trash2, Edit2, Check, X, MoreHorizontal, Activity, Brain, ChevronDown, ChevronRight, Pencil, PanelLeft, UserRound } from "lucide-react";
-import { Link, useLocation } from "wouter";
+import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
@@ -160,7 +160,11 @@ function MemoryPanel() {
   );
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  onCollapse?: () => void;
+}
+
+export function Sidebar({ onCollapse }: SidebarProps) {
   const [location, setLocation] = useLocation();
   const queryClient = useQueryClient();
   
@@ -175,24 +179,34 @@ export function Sidebar() {
   const [editTitle, setEditTitle] = useState("");
   const [backtestOpen, setBacktestOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<{ id: number; title: string } | null>(null);
+  const [deleteError, setDeleteError] = useState("");
 
   const requestDelete = (e: React.MouseEvent, id: number, title: string) => {
     e.preventDefault();
     e.stopPropagation();
+    setDeleteError("");
     setChatToDelete({ id, title });
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!chatToDelete || deleteConversation.isPending) return;
 
     const deletedId = chatToDelete.id;
-    deleteConversation.mutate({ id: deletedId }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: getListOpenrouterConversationsQueryKey() });
-        if (currentId === deletedId) setLocation("/");
-        setChatToDelete(null);
-      },
-    });
+    setDeleteError("");
+
+    try {
+      await deleteConversation.mutateAsync({ id: deletedId });
+      queryClient.setQueryData(
+        getListOpenrouterConversationsQueryKey(),
+        (old: unknown) => Array.isArray(old) ? old.filter((conv) => conv.id !== deletedId) : old,
+      );
+      await queryClient.invalidateQueries({ queryKey: getListOpenrouterConversationsQueryKey() });
+      if (currentId === deletedId) setLocation("/");
+      setChatToDelete(null);
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+      setDeleteError("Could not delete this chat. Please try again.");
+    }
   };
 
   const startEdit = (e: React.MouseEvent, id: number, title: string) => {
@@ -232,7 +246,16 @@ export function Sidebar() {
           </span>
           <div className="text-sm font-semibold text-sidebar-foreground">NexChat</div>
         </div>
-        <PanelLeft className="h-4 w-4 text-sidebar-foreground/50" />
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={onCollapse}
+          className="h-8 w-8 text-sidebar-foreground/50 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+          title="Close sidebar"
+        >
+          <PanelLeft className="h-4 w-4" />
+          <span className="sr-only">Close sidebar</span>
+        </Button>
       </div>
       
       <div className="space-y-1 px-2 pb-3">
@@ -285,8 +308,17 @@ export function Sidebar() {
                   </Button>
                 </div>
               ) : (
-                <Link key={conv.id} href={`/c/${conv.id}`}>
-                  <div
+                <div
+                  key={conv.id}
+                  role="link"
+                  tabIndex={0}
+                  onClick={() => setLocation(`/c/${conv.id}`)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" || event.key === " ") {
+                      event.preventDefault();
+                      setLocation(`/c/${conv.id}`);
+                    }
+                  }}
                     className={`group flex min-h-10 items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer ${
                       currentId === conv.id ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "text-sidebar-foreground/70"
                     }`}
@@ -318,7 +350,6 @@ export function Sidebar() {
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </div>
-                </Link>
               )
             ))
           )}
@@ -348,15 +379,16 @@ export function Sidebar() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete chat?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete “{chatToDelete?.title}” and its messages. This action cannot be undone.
+              This will permanently delete "{chatToDelete?.title}" and its messages. This action cannot be undone.
             </AlertDialogDescription>
+            {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={deleteConversation.isPending}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(event) => {
                 event.preventDefault();
-                confirmDelete();
+                void confirmDelete();
               }}
               disabled={deleteConversation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

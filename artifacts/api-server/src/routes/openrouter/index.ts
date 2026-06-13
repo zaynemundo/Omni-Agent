@@ -316,6 +316,7 @@ router.get("/openrouter/conversations/:id", async (req, res): Promise<void> => {
 router.delete("/openrouter/conversations/:id", async (req, res): Promise<void> => {
   const params = DeleteOpenrouterConversationParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  await db.delete(messages).where(eq(messages.conversationId, params.data.id));
   const [deleted] = await db.delete(conversations).where(eq(conversations.id, params.data.id)).returning();
   if (!deleted) { res.status(404).json({ error: "Conversation not found" }); return; }
   res.sendStatus(204);
