@@ -32,6 +32,8 @@ export default function ChatPage() {
   const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
   const [streamingPhase, setStreamingPhase] = useState<"idle" | "researching" | "generating">("idle");
   const [streamingAgent, setStreamingAgent] = useState("");
+  const [researchContent, setResearchContent] = useState("");
+  const [thoughtsMap, setThoughtsMap] = useState<Record<number, string>>({});
   
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -94,6 +96,7 @@ export default function ChatPage() {
     setStreamingPhase("idle");
     setStreamingAgent("");
     setStreamingMessageId(Date.now() + 1);
+    setResearchContent("");
 
     try {
       const response = await fetch(`/api/openrouter/conversations/${convId}/messages`, {
@@ -139,7 +142,7 @@ export default function ChatPage() {
                   setStreamingPhase("researching");
                   setStreamingAgent(data.agent || "Nemotron Ultra");
                 } else if (data.phase === "research_chunk") {
-                  // just pulse indicator
+                  setResearchContent((prev) => prev + (data.content || ""));
                 } else if (data.phase === "generating") {
                   setStreamingPhase("generating");
                   setStreamingAgent(data.agent || "Nex N2 Pro");
@@ -160,7 +163,18 @@ export default function ChatPage() {
     } finally {
       setIsStreaming(false);
       setStreamingPhase("idle");
+      const savedMsgId = streamingMessageId;
+      const savedResearch = researchContent;
       await queryClient.invalidateQueries({ queryKey: getListOpenrouterMessagesQueryKey(convId) });
+      
+      if (savedMsgId && savedResearch) {
+        const freshMsgs = queryClient.getQueryData<OpenrouterMessage[]>(
+          getListOpenrouterMessagesQueryKey(convId)
+        );
+        const lastAssistant = freshMsgs?.filter(m => m.role === "assistant").at(-1);
+        const targetId = lastAssistant?.id ?? savedMsgId;
+        setThoughtsMap((prev) => ({ ...prev, [targetId]: savedResearch }));
+      }
       
       if (!currentId && convId) {
         setLocation(`/c/${convId}`);
@@ -239,7 +253,12 @@ export default function ChatPage() {
                   <ChatMessage 
                     key={msg.id} 
                     message={msg} 
-                    isStreaming={isStreaming && msg.id === streamingMessageId} 
+                    isStreaming={isStreaming && msg.id === streamingMessageId}
+                    thoughts={
+                      msg.id === streamingMessageId && isStreaming
+                        ? researchContent || undefined
+                        : thoughtsMap[msg.id]
+                    }
                   />
                 ))}
                 <div ref={messagesEndRef} className="h-px" />
