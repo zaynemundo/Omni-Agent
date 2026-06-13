@@ -18,6 +18,46 @@ const router: IRouter = Router();
 const RESEARCHER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free";
 const CODER_MODEL = "nex-agi/nex-n2-pro:free";
 
+function classifyIntent(content: string): "direct" | "research" {
+  const text = content.trim().toLowerCase();
+  const wordCount = text.split(/\s+/).length;
+
+  // Very short messages → always direct
+  if (wordCount <= 4) return "direct";
+
+  // Greetings and simple conversational phrases → direct
+  const directPatterns = [
+    /^(hi|hello|hey|sup|yo|howdy|greetings)\b/,
+    /^(thanks|thank you|thx|ty|ok|okay|sure|cool|great|nice|perfect|got it|understood|alright)\b/,
+    /^(yes|no|yep|nope|nah|yeah)\b/,
+    /^(what('?s| is) (your name|this|that|nexchat))\b/,
+    /^(who are you|what can you do)\b/,
+    /^(can you |could you |please )/,
+  ];
+  if (directPatterns.some((p) => p.test(text))) return "direct";
+
+  // Coding, trading, or research keywords → full dual-agent
+  const researchPatterns = [
+    /\b(mql5|metatrader|mt5|expert advisor|\.mq5)\b/,
+    /\b(write|create|build|implement|generate|code|develop|make|design)\b/,
+    /\b(backtest|strategy|trading|forex|xauusd|eurusd|gbpusd|usdjpy|gold|silver)\b/,
+    /\b(pip|lot size|drawdown|profit factor|win rate|risk.reward)\b/,
+    /\b(rsi|moving average|bollinger|macd|ema|sma|stochastic|atr|fibonacci)\b/,
+    /\b(explain|analyze|analyse|research|compare|optimize|review|debug|fix|refactor|improve)\b/,
+    /\b(algorithm|function|variable|loop|condition|parameter|indicator)\b/,
+    /\b(ontic|ontick|oninit|ondeinit|ctrade|cposition)\b/i,
+  ];
+  if (researchPatterns.some((p) => p.test(text))) return "research";
+
+  // Pasted code blocks → research
+  if (content.includes("```") || content.includes("void ") || content.includes("double ") || content.includes("int ")) return "research";
+
+  // Long messages likely need research
+  if (wordCount > 40) return "research";
+
+  return "direct";
+}
+
 const AVAILABLE_MODELS = [
   {
     id: CODER_MODEL,
@@ -177,14 +217,19 @@ router.post("/openrouter/conversations/:id/messages", async (req, res): Promise<
 
   const send = (data: object) => res.write(`data: ${JSON.stringify(data)}\n\n`);
 
-  try {
-    // ── Phase 1: Nemotron Ultra researches ──────────────────────────────────
-    send({ phase: "researching", agent: "Nemotron Ultra" });
+  const mode = classifyIntent(content);
 
-    const researchMessages: { role: "user" | "assistant" | "system"; content: string }[] = [
-      {
-        role: "system",
-        content: `You are a highly capable research analyst specializing in trading, finance, MQL5/MetaTrader 5, and technical analysis. Your job is to analyze the user's request and provide concise, accurate research findings that will help another AI write the best possible response or code.
+  try {
+    let researchOutput = "";
+
+    if (mode === "research") {
+      // ── Phase 1: Nemotron Ultra researches ────────────────────────────────
+      send({ phase: "researching", agent: "Nemotron Ultra" });
+
+      const researchMessages: { role: "user" | "assistant" | "system"; content: string }[] = [
+        {
+          role: "system",
+          content: `You are a highly capable research analyst specializing in trading, finance, MQL5/MetaTrader 5, and technical analysis. Your job is to analyze the user's request and provide concise, accurate research findings that will help another AI write the best possible response or code.
 
 Today's date: ${new Date().toISOString().split("T")[0]}.
 
@@ -196,33 +241,34 @@ Focus on:
 - For backtesting: realistic assumptions, slippage, spread impact
 
 Be concise and structured. Output 3-7 bullet points of the most actionable findings. Do NOT write any final answer or code yourself — only research notes.`,
-      },
-      {
-        role: "user",
-        content: `Research request: "${content}"\n\nProvide research findings only — no final answer, no code. Bullet points of key insights.`,
-      },
-    ];
+        },
+        {
+          role: "user",
+          content: `Research request: "${content}"\n\nProvide research findings only — no final answer, no code. Bullet points of key insights.`,
+        },
+      ];
 
-    let researchOutput = "";
-    const researchStream = await openrouter.chat.completions.create({
-      model: RESEARCHER_MODEL,
-      max_tokens: 2048,
-      messages: researchMessages,
-      stream: true,
-    });
+      const researchStream = await openrouter.chat.completions.create({
+        model: RESEARCHER_MODEL,
+        max_tokens: 2048,
+        messages: researchMessages,
+        stream: true,
+      });
 
-    for await (const chunk of researchStream) {
-      const chunkContent = chunk.choices[0]?.delta?.content;
-      if (chunkContent) {
-        researchOutput += chunkContent;
-        send({ phase: "research_chunk", content: chunkContent });
+      for await (const chunk of researchStream) {
+        const chunkContent = chunk.choices[0]?.delta?.content;
+        if (chunkContent) {
+          researchOutput += chunkContent;
+          send({ phase: "research_chunk", content: chunkContent });
+        }
       }
     }
 
     // ── Phase 2: Nex N2 Pro generates the final response ──────────────────
     send({ phase: "generating", agent: "Nex N2 Pro" });
 
-    const coderSystemPrompt = `You are Nex N2 Pro, a highly capable AI assistant specializing in trading, algorithmic strategies, MQL5/MetaTrader 5 Expert Advisor development, and quantitative analysis. You have been given research findings from Nemotron Ultra (your research partner) to help you craft the best possible response.
+    const coderSystemPrompt = mode === "research"
+      ? `You are Nex N2 Pro, a highly capable AI assistant specializing in trading, algorithmic strategies, MQL5/MetaTrader 5 Expert Advisor development, and quantitative analysis. You have been given research findings from Nemotron Ultra (your research partner) to help you craft the best possible response.
 
 Today's date: ${new Date().toISOString().split("T")[0]}.
 
@@ -244,7 +290,8 @@ MQL5 code guidelines:
 Research findings from Nemotron Ultra:
 ---
 ${researchOutput}
----`;
+---`
+      : `You are Nex N2 Pro, a friendly and knowledgeable AI assistant. Respond naturally and concisely to the user's message. For simple greetings or short questions, keep your reply brief and conversational. For technical topics, be thorough but not verbose. Today's date: ${new Date().toISOString().split("T")[0]}.`;
 
     const coderMessages: { role: "user" | "assistant" | "system"; content: string }[] = [
       { role: "system", content: coderSystemPrompt },
@@ -260,7 +307,7 @@ ${researchOutput}
     let fullResponse = "";
     const coderStream = await openrouter.chat.completions.create({
       model: CODER_MODEL,
-      max_tokens: 8192,
+      max_tokens: mode === "direct" ? 512 : 8192,
       messages: coderMessages,
       stream: true,
     });

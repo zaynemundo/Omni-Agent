@@ -91,8 +91,8 @@ export default function ChatPage() {
 
     setIsStreaming(true);
     setStreamingContent("");
-    setStreamingPhase("researching");
-    setStreamingAgent("Nemotron Ultra");
+    setStreamingPhase("idle");
+    setStreamingAgent("");
     setStreamingMessageId(Date.now() + 1);
 
     try {
