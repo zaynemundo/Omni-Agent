@@ -31,8 +31,6 @@ export interface OpenrouterConversationInput {
 
 export interface OpenrouterMessageInput {
   content: string;
-  model: string;
-  agentMode?: boolean;
 }
 
 export interface OpenrouterConversationWithMessages {
@@ -77,5 +75,58 @@ export interface FetchPageResult {
   url: string;
   title: string;
   content: string;
+}
+
+export interface BacktestInput {
+  symbol: string;
+  strategy: string;
+  initialBalance: number;
+  lotSize?: number;
+  stopLoss?: number;
+  takeProfit?: number;
+  fastPeriod?: number;
+  slowPeriod?: number;
+  rsiPeriod?: number;
+  rsiOverbought?: number;
+  rsiOversold?: number;
+  candles?: number;
+}
+
+export interface BacktestTrade {
+  id: number;
+  type: string;
+  entryTime: string;
+  exitTime: string;
+  entryPrice: number;
+  exitPrice: number;
+  lots: number;
+  pnl: number;
+  pips: number;
+}
+
+export interface EquityPoint {
+  time: string;
+  equity: number;
+  balance: number;
+}
+
+export interface BacktestResult {
+  symbol: string;
+  strategy: string;
+  initialBalance: number;
+  finalBalance: number;
+  totalPnl: number;
+  totalPnlPct: number;
+  totalTrades: number;
+  winningTrades: number;
+  losingTrades: number;
+  winRate: number;
+  maxDrawdown: number;
+  maxDrawdownPct: number;
+  profitFactor: number;
+  averageWin: number;
+  averageLoss: number;
+  trades: BacktestTrade[];
+  equityCurve: EquityPoint[];
 }
 

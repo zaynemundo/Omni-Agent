@@ -14,13 +14,14 @@ tags:
     description: OpenRouter AI chat operations
   - name: search
     description: Web search agent operations
+  - name: backtesting
+    description: Trading strategy backtesting
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -157,7 +158,7 @@ paths:
     post:
       operationId: sendOpenrouterMessage
       tags: [openrouter]
-      summary: Send a message and receive an AI response (SSE stream)
+      summary: Send a message (dual-agent SSE stream)
       parameters:
         - name: id
           in: path
@@ -172,7 +173,7 @@ paths:
               $ref: "#/components/schemas/OpenrouterMessageInput"
       responses:
         "200":
-          description: SSE stream of assistant response chunks
+          description: SSE stream with dual-agent phases
           content:
             text/event-stream: {}
 
@@ -228,6 +229,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FetchPageResult"
+
+  /backtesting/run:
+    post:
+      operationId: runBacktest
+      tags: [backtesting]
+      summary: Run a trading strategy backtest simulation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BacktestInput"
+      responses:
+        "200":
+          description: Backtest results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BacktestResult"
 
 components:
   schemas:
@@ -291,13 +311,8 @@ components:
       properties:
         content:
           type: string
-        model:
-          type: string
-        agentMode:
-          type: boolean
       required:
         - content
-        - model
 
     OpenrouterConversationWithMessages:
       type: object
@@ -402,3 +417,141 @@ components:
         - url
         - title
         - content
+
+    BacktestInput:
+      type: object
+      properties:
+        symbol:
+          type: string
+        strategy:
+          type: string
+        initialBalance:
+          type: number
+        lotSize:
+          type: number
+        stopLoss:
+          type: number
+        takeProfit:
+          type: number
+        fastPeriod:
+          type: integer
+        slowPeriod:
+          type: integer
+        rsiPeriod:
+          type: integer
+        rsiOverbought:
+          type: integer
+        rsiOversold:
+          type: integer
+        candles:
+          type: integer
+      required:
+        - symbol
+        - strategy
+        - initialBalance
+
+    BacktestResult:
+      type: object
+      properties:
+        symbol:
+          type: string
+        strategy:
+          type: string
+        initialBalance:
+          type: number
+        finalBalance:
+          type: number
+        totalPnl:
+          type: number
+        totalPnlPct:
+          type: number
+        totalTrades:
+          type: integer
+        winningTrades:
+          type: integer
+        losingTrades:
+          type: integer
+        winRate:
+          type: number
+        maxDrawdown:
+          type: number
+        maxDrawdownPct:
+          type: number
+        profitFactor:
+          type: number
+        averageWin:
+          type: number
+        averageLoss:
+          type: number
+        trades:
+          type: array
+          items:
+            $ref: "#/components/schemas/BacktestTrade"
+        equityCurve:
+          type: array
+          items:
+            $ref: "#/components/schemas/EquityPoint"
+      required:
+        - symbol
+        - strategy
+        - initialBalance
+        - finalBalance
+        - totalPnl
+        - totalPnlPct
+        - totalTrades
+        - winningTrades
+        - losingTrades
+        - winRate
+        - maxDrawdown
+        - maxDrawdownPct
+        - profitFactor
+        - averageWin
+        - averageLoss
+        - trades
+        - equityCurve
+
+    BacktestTrade:
+      type: object
+      properties:
+        id:
+          type: integer
+        type:
+          type: string
+        entryTime:
+          type: string
+        exitTime:
+          type: string
+        entryPrice:
+          type: number
+        exitPrice:
+          type: number
+        lots:
+          type: number
+        pnl:
+          type: number
+        pips:
+          type: number
+      required:
+        - id
+        - type
+        - entryTime
+        - exitTime
+        - entryPrice
+        - exitPrice
+        - lots
+        - pnl
+        - pips
+
+    EquityPoint:
+      type: object
+      properties:
+        time:
+          type: string
+        equity:
+          type: number
+        balance:
+          type: number
+      required:
+        - time
+        - equity
+        - balance

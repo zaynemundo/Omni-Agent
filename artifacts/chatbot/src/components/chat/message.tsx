@@ -1,9 +1,9 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Check, Copy, User, Bot, Globe } from "lucide-react";
+import { Check, Copy, User, Bot } from "lucide-react";
 import { format } from "date-fns";
 import type { OpenrouterMessage } from "@workspace/api-client-react/src/generated/api.schemas";
 
@@ -41,7 +41,9 @@ export function ChatMessage({ message, isStreaming }: MessageProps) {
           </span>
           {message.model && (
             <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-sm">
-              {message.model}
+              {message.model === "nex-agi/nex-n2-pro:free" ? "Nex N2 Pro" : 
+               message.model === "nvidia/nemotron-3-ultra-550b-a55b:free" ? "Nemotron Ultra" : 
+               message.model}
             </span>
           )}
         </div>
@@ -65,13 +67,13 @@ export function ChatMessage({ message, isStreaming }: MessageProps) {
                   return (
                     <div className="relative my-4 overflow-hidden rounded-md border bg-zinc-950">
                       <div className="flex items-center justify-between bg-zinc-900 px-4 py-1.5 text-xs text-zinc-400">
-                        <span>{match[1]}</span>
+                        <span>{match[1].toLowerCase() === 'mql5' ? 'MQL5' : match[1]}</span>
                         <button
                           onClick={handleCopy}
                           className="flex items-center gap-1 hover:text-zinc-100 transition-colors"
+                          title="Copy"
                         >
-                          {isCopied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
-                          {isCopied ? "Copied!" : "Copy"}
+                          {isCopied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
                         </button>
                       </div>
                       <SyntaxHighlighter

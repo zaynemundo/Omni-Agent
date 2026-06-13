@@ -9,7 +9,6 @@ import * as zod from 'zod';
 
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
@@ -103,16 +102,14 @@ export const ListOpenrouterMessagesResponse = zod.array(ListOpenrouterMessagesRe
 
 
 /**
- * @summary Send a message and receive an AI response (SSE stream)
+ * @summary Send a message (dual-agent SSE stream)
  */
 export const SendOpenrouterMessageParams = zod.object({
   "id": zod.coerce.number()
 })
 
 export const SendOpenrouterMessageBody = zod.object({
-  "content": zod.string(),
-  "model": zod.string(),
-  "agentMode": zod.boolean().optional()
+  "content": zod.string()
 })
 
 
@@ -157,6 +154,59 @@ export const FetchPageResponse = zod.object({
   "url": zod.string(),
   "title": zod.string(),
   "content": zod.string()
+})
+
+
+/**
+ * @summary Run a trading strategy backtest simulation
+ */
+export const RunBacktestBody = zod.object({
+  "symbol": zod.string(),
+  "strategy": zod.string(),
+  "initialBalance": zod.number(),
+  "lotSize": zod.number().optional(),
+  "stopLoss": zod.number().optional(),
+  "takeProfit": zod.number().optional(),
+  "fastPeriod": zod.number().optional(),
+  "slowPeriod": zod.number().optional(),
+  "rsiPeriod": zod.number().optional(),
+  "rsiOverbought": zod.number().optional(),
+  "rsiOversold": zod.number().optional(),
+  "candles": zod.number().optional()
+})
+
+export const RunBacktestResponse = zod.object({
+  "symbol": zod.string(),
+  "strategy": zod.string(),
+  "initialBalance": zod.number(),
+  "finalBalance": zod.number(),
+  "totalPnl": zod.number(),
+  "totalPnlPct": zod.number(),
+  "totalTrades": zod.number(),
+  "winningTrades": zod.number(),
+  "losingTrades": zod.number(),
+  "winRate": zod.number(),
+  "maxDrawdown": zod.number(),
+  "maxDrawdownPct": zod.number(),
+  "profitFactor": zod.number(),
+  "averageWin": zod.number(),
+  "averageLoss": zod.number(),
+  "trades": zod.array(zod.object({
+  "id": zod.number(),
+  "type": zod.string(),
+  "entryTime": zod.string(),
+  "exitTime": zod.string(),
+  "entryPrice": zod.number(),
+  "exitPrice": zod.number(),
+  "lots": zod.number(),
+  "pnl": zod.number(),
+  "pips": zod.number()
+})),
+  "equityCurve": zod.array(zod.object({
+  "time": zod.string(),
+  "equity": zod.number(),
+  "balance": zod.number()
+}))
 })
 
 

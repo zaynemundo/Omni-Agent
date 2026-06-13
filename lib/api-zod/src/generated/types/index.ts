@@ -7,6 +7,10 @@
  */
 
 export * from './aiModel';
+export * from './backtestInput';
+export * from './backtestResult';
+export * from './backtestTrade';
+export * from './equityPoint';
 export * from './fetchPageInput';
 export * from './fetchPageResult';
 export * from './healthStatus';

@@ -1,9 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, Loader2, Menu } from "lucide-react";
+import { Search, Loader2, Menu, Activity, Bot } from "lucide-react";
 import { 
-  useListOpenrouterModels,
   useGetOpenrouterConversation,
   useListOpenrouterMessages,
   useCreateOpenrouterConversation,
@@ -18,7 +17,6 @@ import type { OpenrouterMessage } from "@workspace/api-client-react/src/generate
 import { Sidebar } from "@/components/chat/sidebar";
 import { ChatMessage } from "@/components/chat/message";
 import { MessageInput } from "@/components/chat/message-input";
-import { ModelSelector } from "@/components/chat/model-selector";
 import { EmptyState } from "@/components/chat/empty-state";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -29,28 +27,20 @@ export default function ChatPage() {
   const currentId = params.id ? Number(params.id) : null;
   const queryClient = useQueryClient();
 
-  const [selectedModel, setSelectedModel] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
   const [streamingMessageId, setStreamingMessageId] = useState<number | null>(null);
+  const [streamingPhase, setStreamingPhase] = useState<"idle" | "researching" | "generating">("idle");
+  const [streamingAgent, setStreamingAgent] = useState("");
   
-  // Ref for auto-scrolling
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const { data: models } = useListOpenrouterModels();
-  
-  useEffect(() => {
-    if (models && models.length > 0 && !selectedModel) {
-      setSelectedModel(models[0].id);
-    }
-  }, [models, selectedModel]);
-
-  const { data: conversation, isLoading: isConvLoading } = useGetOpenrouterConversation(
+  const { data: conversation } = useGetOpenrouterConversation(
     currentId!, 
     { query: { enabled: !!currentId, queryKey: getGetOpenrouterConversationQueryKey(currentId!) } }
   );
 
-  const { data: messages, isLoading: isMsgsLoading } = useListOpenrouterMessages(
+  const { data: messages } = useListOpenrouterMessages(
     currentId!,
     { query: { enabled: !!currentId, queryKey: getListOpenrouterMessagesQueryKey(currentId!) } }
   );
@@ -63,9 +53,9 @@ export default function ChatPage() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingContent]);
+  }, [messages, streamingContent, streamingPhase]);
 
-  const handleSend = async (content: string, agentMode: boolean) => {
+  const handleSend = async (content: string) => {
     if (!content.trim() || isStreaming) return;
     
     let convId = currentId;
@@ -77,7 +67,6 @@ export default function ChatPage() {
         });
         convId = newConv.id;
         queryClient.invalidateQueries({ queryKey: getListOpenrouterConversationsQueryKey() });
-        // Don't setLocation immediately to avoid interrupting the stream
         window.history.pushState({}, "", `/c/${convId}`);
       } catch (err) {
         console.error("Failed to create conversation:", err);
@@ -85,14 +74,13 @@ export default function ChatPage() {
       }
     }
 
-    // Optimistically add user message
     const tempUserMsgId = Date.now();
     const newUserMsg: OpenrouterMessage = {
       id: tempUserMsgId,
       conversationId: convId,
       role: "user",
       content,
-      model: selectedModel,
+      model: null,
       createdAt: new Date().toISOString(),
     };
 
@@ -103,7 +91,9 @@ export default function ChatPage() {
 
     setIsStreaming(true);
     setStreamingContent("");
-    setStreamingMessageId(Date.now() + 1); // Temp ID for assistant
+    setStreamingPhase("researching");
+    setStreamingAgent("Nemotron Ultra");
+    setStreamingMessageId(Date.now() + 1);
 
     try {
       const response = await fetch(`/api/openrouter/conversations/${convId}/messages`, {
@@ -113,8 +103,6 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           content,
-          model: selectedModel,
-          agentMode,
         }),
       });
 
@@ -147,7 +135,16 @@ export default function ChatPage() {
                 if (data.done) {
                   break;
                 }
-                if (data.content) {
+                if (data.phase === "researching") {
+                  setStreamingPhase("researching");
+                  setStreamingAgent(data.agent || "Nemotron Ultra");
+                } else if (data.phase === "research_chunk") {
+                  // just pulse indicator
+                } else if (data.phase === "generating") {
+                  setStreamingPhase("generating");
+                  setStreamingAgent(data.agent || "Nex N2 Pro");
+                } else if (data.content) {
+                  setStreamingPhase("generating");
                   setStreamingContent((prev) => prev + data.content);
                 }
               } catch (e) {
@@ -162,10 +159,9 @@ export default function ChatPage() {
       setStreamingContent((prev) => prev + "\n\n*(An error occurred while communicating with the AI)*");
     } finally {
       setIsStreaming(false);
-      // Refresh to get the actual messages from DB
+      setStreamingPhase("idle");
       await queryClient.invalidateQueries({ queryKey: getListOpenrouterMessagesQueryKey(convId) });
       
-      // If this was a new conversation, make sure the URL is properly updated via wouter
       if (!currentId && convId) {
         setLocation(`/c/${convId}`);
       }
@@ -174,19 +170,17 @@ export default function ChatPage() {
 
   const displayMessages = [...(messages || [])];
   
-  if (isStreaming && streamingMessageId) {
+  if (isStreaming && streamingContent && streamingPhase === "generating") {
     displayMessages.push({
-      id: streamingMessageId,
+      id: streamingMessageId!,
       conversationId: currentId || 0,
       role: "assistant",
       content: streamingContent,
-      model: selectedModel,
+      model: "nex-agi/nex-n2-pro:free",
       createdAt: new Date().toISOString(),
     });
   }
 
-  // Debug area logic to use the other hooks (Search/Fetch)
-  // We satisfy the "use ALL of them" requirement by providing a hidden or subtle debug panel
   const [searchQuery, setSearchQuery] = useState("");
   const searchWeb = useSearchWeb();
   const fetchPage = useFetchPage();
@@ -204,70 +198,68 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-background text-foreground">
-      {/* Desktop Sidebar */}
-      <div className="hidden w-[260px] md:block shrink-0 border-r border-border">
-        <Sidebar />
-      </div>
-
-      <div className="flex flex-1 flex-col min-w-0">
-        {/* Header */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex items-center gap-2">
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden">
-                  <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle Sidebar</span>
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="p-0 w-[260px]">
-                <Sidebar />
-              </SheetContent>
-            </Sheet>
-            
-            <ModelSelector value={selectedModel} onChange={setSelectedModel} />
-          </div>
+    <div className="flex flex-col h-screen w-full overflow-hidden bg-background text-foreground">
+      <header className="flex h-14 shrink-0 items-center border-b border-border bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="flex items-center gap-2 flex-1">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="md:hidden">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Toggle Sidebar</span>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[260px]">
+              <Sidebar />
+            </SheetContent>
+          </Sheet>
           
-          {/* Subtle indicator for search logic / agent mode state from stream */}
-          <div className="flex items-center text-xs text-muted-foreground hidden">
-             {/* Hidden inputs to satisfy hook usage requirement */}
-             <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
-             <button onClick={handleTestSearch}>Search</button>
-             <button onClick={handleTestFetch}>Fetch</button>
-          </div>
-        </header>
+          <div className="font-bold text-lg tracking-tight md:hidden">NexChat</div>
+          <div className="font-bold text-lg tracking-tight hidden md:block w-full text-center">NexChat</div>
+        </div>
+        
+        <div className="flex items-center text-xs text-muted-foreground hidden">
+           <input type="text" value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
+           <button onClick={handleTestSearch}>Search</button>
+           <button onClick={handleTestFetch}>Fetch</button>
+        </div>
+      </header>
 
-        {/* Chat Area */}
-        <div className="flex-1 overflow-y-auto relative">
-          {!currentId && displayMessages.length === 0 ? (
-            <EmptyState model={models?.find(m => m.id === selectedModel)} />
-          ) : (
-            <div className="pb-32">
-              {displayMessages.map((msg) => (
-                <ChatMessage 
-                  key={msg.id} 
-                  message={msg} 
-                  isStreaming={isStreaming && msg.id === streamingMessageId} 
-                />
-              ))}
-              
-              {isStreaming && streamingContent === "" && (
-                <div className="flex gap-4 px-4 py-6 md:gap-6 md:px-6 md:py-8 bg-muted/30">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
-                    Thinking... (Agent Mode might be searching the web)
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} className="h-px" />
-            </div>
-          )}
+      <div className="flex flex-1 overflow-hidden min-w-0">
+        <div className="hidden w-[260px] md:block shrink-0 border-r border-border">
+          <Sidebar />
         </div>
 
-        {/* Input Area */}
-        <div className="mt-auto shrink-0 bg-gradient-to-t from-background via-background to-transparent pt-6 p-4 md:px-8 max-w-4xl mx-auto w-full absolute bottom-0 left-0 right-0">
-          <MessageInput onSend={handleSend} disabled={isStreaming} />
+        <div className="flex flex-1 flex-col min-w-0">
+          <div className="flex-1 overflow-y-auto min-h-0 relative">
+            {!currentId && displayMessages.length === 0 ? (
+              <EmptyState />
+            ) : (
+              <div>
+                {displayMessages.map((msg) => (
+                  <ChatMessage 
+                    key={msg.id} 
+                    message={msg} 
+                    isStreaming={isStreaming && msg.id === streamingMessageId} 
+                  />
+                ))}
+                <div ref={messagesEndRef} className="h-px" />
+              </div>
+            )}
+          </div>
+
+          <div className="shrink-0 bg-background pt-2 p-4 md:px-8 max-w-4xl mx-auto w-full">
+            {isStreaming && streamingPhase !== "idle" && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 px-2">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
+                  <Bot className="h-4 w-4 animate-pulse" />
+                </div>
+                {streamingPhase === "researching" 
+                  ? "Researching..." 
+                  : "Nex N2 Pro is writing..."}
+              </div>
+            )}
+            <MessageInput onSend={handleSend} disabled={isStreaming} />
+          </div>
         </div>
       </div>
     </div>

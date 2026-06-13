@@ -21,6 +21,8 @@ import type {
 
 import type {
   AiModel,
+  BacktestInput,
+  BacktestResult,
   FetchPageInput,
   FetchPageResult,
   HealthStatus,
@@ -55,7 +57,6 @@ export const getHealthCheckUrl = () => {
 }
 
 /**
- * Returns server health status
  * @summary Health check
  */
 export const healthCheck = async ( options?: RequestInit): Promise<HealthStatus> => {
@@ -577,7 +578,7 @@ export const getSendOpenrouterMessageUrl = (id: number,) => {
 }
 
 /**
- * @summary Send a message and receive an AI response (SSE stream)
+ * @summary Send a message (dual-agent SSE stream)
  */
 export const sendOpenrouterMessage = async (id: number,
     openrouterMessageInput: OpenrouterMessageInput, options?: RequestInit): Promise<unknown> => {
@@ -627,7 +628,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
     export type SendOpenrouterMessageMutationError = ErrorType<unknown>
 
     /**
- * @summary Send a message and receive an AI response (SSE stream)
+ * @summary Send a message (dual-agent SSE stream)
  */
 export const useSendOpenrouterMessage = <TError = ErrorType<unknown>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendOpenrouterMessage>>, TError,{id: number;data: BodyType<OpenrouterMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
@@ -857,5 +858,76 @@ export const useFetchPage = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getFetchPageMutationOptions(options));
+    }
+
+export const getRunBacktestUrl = () => {
+
+
+
+
+  return `/api/backtesting/run`
+}
+
+/**
+ * @summary Run a trading strategy backtest simulation
+ */
+export const runBacktest = async (backtestInput: BacktestInput, options?: RequestInit): Promise<BacktestResult> => {
+
+  return customFetch<BacktestResult>(getRunBacktestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      backtestInput,)
+  }
+);}
+
+
+
+
+export const getRunBacktestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runBacktest>>, TError,{data: BodyType<BacktestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runBacktest>>, TError,{data: BodyType<BacktestInput>}, TContext> => {
+
+const mutationKey = ['runBacktest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runBacktest>>, {data: BodyType<BacktestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  runBacktest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunBacktestMutationResult = NonNullable<Awaited<ReturnType<typeof runBacktest>>>
+    export type RunBacktestMutationBody = BodyType<BacktestInput>
+    export type RunBacktestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Run a trading strategy backtest simulation
+ */
+export const useRunBacktest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runBacktest>>, TError,{data: BodyType<BacktestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runBacktest>>,
+        TError,
+        {data: BodyType<BacktestInput>},
+        TContext
+      > => {
+      return useMutation(getRunBacktestMutationOptions(options));
     }
 

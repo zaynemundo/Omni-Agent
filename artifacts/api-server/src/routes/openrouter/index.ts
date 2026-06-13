@@ -15,29 +15,20 @@ import {
 
 const router: IRouter = Router();
 
+const RESEARCHER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free";
+const CODER_MODEL = "nex-agi/nex-n2-pro:free";
+
 const AVAILABLE_MODELS = [
   {
-    id: "nex-agi/nex-n2-pro:free",
+    id: CODER_MODEL,
     name: "Nex N2 Pro",
-    description: "Advanced reasoning model by Nex AGI — free tier",
+    description: "Advanced reasoning model by Nex AGI — code & execution",
     isFree: true,
   },
   {
-    id: "nvidia/nemotron-3-ultra-550b-a55b:free",
+    id: RESEARCHER_MODEL,
     name: "Nemotron 3 Ultra",
-    description: "NVIDIA's 550B ultra-large language model — free tier",
-    isFree: true,
-  },
-  {
-    id: "nvidia/nemotron-3-super-120b-a12b:free",
-    name: "Nemotron 3 Super",
-    description: "NVIDIA's 120B super model — free tier",
-    isFree: true,
-  },
-  {
-    id: "nvidia/nemotron-3-nano-30b-a3b:free",
-    name: "Nemotron 3 Nano",
-    description: "NVIDIA's fast 30B nano model — free tier",
+    description: "NVIDIA's 550B ultra-large model — research & analysis",
     isFree: true,
   },
 ];
@@ -156,7 +147,7 @@ router.post("/openrouter/conversations/:id/messages", async (req, res): Promise<
   }
 
   const conversationId = params.data.id;
-  const { content, model, agentMode } = body.data;
+  const { content } = body.data;
 
   const [conv] = await db
     .select()
@@ -180,51 +171,105 @@ router.post("/openrouter/conversations/:id/messages", async (req, res): Promise<
     .where(eq(messages.conversationId, conversationId))
     .orderBy(messages.createdAt);
 
-  const chatMessages: { role: "user" | "assistant" | "system"; content: string }[] = [];
-
-  if (agentMode) {
-    chatMessages.push({
-      role: "system",
-      content: `You are an intelligent AI assistant with agent capabilities. When users ask questions that require current information, research, or web browsing, you can instruct the system to perform a web search by including a JSON block in your response like this:
-
-<search>{"query": "your search query here"}</search>
-
-After receiving search results, you can continue your response with the information found. You should:
-1. Think step by step about whether a web search would help answer the question better
-2. Use searches strategically to find relevant, up-to-date information
-3. Synthesize information from multiple sources when needed
-4. Cite your sources when using web search results
-
-Today's date is ${new Date().toISOString().split("T")[0]}.`,
-    });
-  }
-
-  for (const msg of history) {
-    chatMessages.push({
-      role: msg.role as "user" | "assistant",
-      content: msg.content,
-    });
-  }
-
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Connection", "keep-alive");
 
-  let fullResponse = "";
+  const send = (data: object) => res.write(`data: ${JSON.stringify(data)}\n\n`);
 
   try {
-    const stream = await openrouter.chat.completions.create({
-      model,
-      max_tokens: 8192,
-      messages: chatMessages,
+    // ── Phase 1: Nemotron Ultra researches ──────────────────────────────────
+    send({ phase: "researching", agent: "Nemotron Ultra" });
+
+    const researchMessages: { role: "user" | "assistant" | "system"; content: string }[] = [
+      {
+        role: "system",
+        content: `You are a highly capable research analyst specializing in trading, finance, MQL5/MetaTrader 5, and technical analysis. Your job is to analyze the user's request and provide concise, accurate research findings that will help another AI write the best possible response or code.
+
+Today's date: ${new Date().toISOString().split("T")[0]}.
+
+Focus on:
+- Key technical concepts relevant to the request
+- Best practices, important considerations, known pitfalls
+- For trading strategies: known edge cases, risk parameters, indicator behavior
+- For MQL5/MT5: relevant functions, syntax patterns, common EA structure
+- For backtesting: realistic assumptions, slippage, spread impact
+
+Be concise and structured. Output 3-7 bullet points of the most actionable findings. Do NOT write any final answer or code yourself — only research notes.`,
+      },
+      {
+        role: "user",
+        content: `Research request: "${content}"\n\nProvide research findings only — no final answer, no code. Bullet points of key insights.`,
+      },
+    ];
+
+    let researchOutput = "";
+    const researchStream = await openrouter.chat.completions.create({
+      model: RESEARCHER_MODEL,
+      max_tokens: 2048,
+      messages: researchMessages,
       stream: true,
     });
 
-    for await (const chunk of stream) {
+    for await (const chunk of researchStream) {
+      const chunkContent = chunk.choices[0]?.delta?.content;
+      if (chunkContent) {
+        researchOutput += chunkContent;
+        send({ phase: "research_chunk", content: chunkContent });
+      }
+    }
+
+    // ── Phase 2: Nex N2 Pro generates the final response ──────────────────
+    send({ phase: "generating", agent: "Nex N2 Pro" });
+
+    const coderSystemPrompt = `You are Nex N2 Pro, a highly capable AI assistant specializing in trading, algorithmic strategies, MQL5/MetaTrader 5 Expert Advisor development, and quantitative analysis. You have been given research findings from Nemotron Ultra (your research partner) to help you craft the best possible response.
+
+Today's date: ${new Date().toISOString().split("T")[0]}.
+
+Your capabilities:
+- Write production-ready MQL5 Expert Advisors for MetaTrader 5
+- Design and explain trading strategies (XAUUSD, Forex, indices, crypto)
+- Explain strategy logic and risk management
+- Interpret backtest results from the built-in strategy simulator
+- Write clean, well-commented, copy-paste-ready code
+
+MQL5 code guidelines:
+- Always wrap code in \`\`\`mql5 code blocks
+- Include proper #property headers
+- Use OnInit(), OnDeinit(), OnTick() standard structure
+- Handle errors gracefully
+- Add meaningful comments
+- Respect user's SL/TP preferences (if user says no SL, omit it)
+
+Research findings from Nemotron Ultra:
+---
+${researchOutput}
+---`;
+
+    const coderMessages: { role: "user" | "assistant" | "system"; content: string }[] = [
+      { role: "system", content: coderSystemPrompt },
+    ];
+
+    for (const msg of history) {
+      coderMessages.push({
+        role: msg.role as "user" | "assistant",
+        content: msg.content,
+      });
+    }
+
+    let fullResponse = "";
+    const coderStream = await openrouter.chat.completions.create({
+      model: CODER_MODEL,
+      max_tokens: 8192,
+      messages: coderMessages,
+      stream: true,
+    });
+
+    for await (const chunk of coderStream) {
       const chunkContent = chunk.choices[0]?.delta?.content;
       if (chunkContent) {
         fullResponse += chunkContent;
-        res.write(`data: ${JSON.stringify({ content: chunkContent })}\n\n`);
+        send({ content: chunkContent });
       }
     }
 
@@ -232,7 +277,7 @@ Today's date is ${new Date().toISOString().split("T")[0]}.`,
       conversationId,
       role: "assistant",
       content: fullResponse,
-      model,
+      model: CODER_MODEL,
     });
 
     if (conv.title === "New Conversation" || conv.title.startsWith("New Conversation")) {
@@ -243,11 +288,11 @@ Today's date is ${new Date().toISOString().split("T")[0]}.`,
         .where(eq(conversations.id, conversationId));
     }
 
-    res.write(`data: ${JSON.stringify({ done: true })}\n\n`);
+    send({ done: true });
     res.end();
   } catch (err) {
-    req.log.error({ err }, "Error streaming from OpenRouter");
-    res.write(`data: ${JSON.stringify({ error: "Failed to get AI response" })}\n\n`);
+    req.log.error({ err }, "Error in dual-agent pipeline");
+    send({ error: "Failed to get AI response. Please try again." });
     res.end();
   }
 });

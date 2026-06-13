@@ -1,6 +1,5 @@
-import { Plus, MessageSquare, Trash2, Edit2, Check, X, MoreHorizontal } from "lucide-react";
+import { Plus, MessageSquare, Trash2, Edit2, Check, X, MoreHorizontal, Activity } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -18,6 +17,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { BacktestPanel } from "./backtest-panel";
 
 export function Sidebar() {
   const [location, setLocation] = useLocation();
@@ -31,6 +31,7 @@ export function Sidebar() {
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  const [backtestOpen, setBacktestOpen] = useState(false);
 
   const handleDelete = (e: React.MouseEvent, id: number) => {
     e.preventDefault();
@@ -79,13 +80,21 @@ export function Sidebar() {
         <span className="font-bold text-lg tracking-tight px-2 text-sidebar-primary">NexChat</span>
       </div>
       
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4 space-y-2">
         <Button 
           className="w-full justify-start gap-2 bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90 shadow-sm"
           onClick={() => setLocation("/")}
         >
           <Plus className="h-4 w-4" />
           New Chat
+        </Button>
+        <Button 
+          variant="outline"
+          className="w-full justify-start gap-2"
+          onClick={() => setBacktestOpen(true)}
+        >
+          <Activity className="h-4 w-4" />
+          Backtest
         </Button>
       </div>
 
@@ -168,6 +177,8 @@ export function Sidebar() {
           <div className="text-sm font-medium">User</div>
         </div>
       </div>
+
+      <BacktestPanel open={backtestOpen} onOpenChange={setBacktestOpen} />
     </div>
   );
 }
