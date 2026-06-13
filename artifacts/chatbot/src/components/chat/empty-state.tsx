@@ -10,13 +10,13 @@ export function EmptyState() {
         How can I help you today?
       </h2>
       <p className="mb-8 max-w-md text-sm text-muted-foreground">
-        Nemotron Ultra researches. Nex N2 Pro codes. Two AIs working together on every message.
+        Groq-powered agents research and code together on complex requests.
       </p>
       
       <div className="grid w-full max-w-2xl grid-cols-1 gap-4 md:grid-cols-2">
         <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50 cursor-pointer">
           <div className="text-sm font-medium text-foreground">Create an MT5 Expert Advisor</div>
-          <div className="text-xs text-muted-foreground">Describe your trading strategy, Nex N2 Pro writes the MQL5 code</div>
+          <div className="text-xs text-muted-foreground">Describe your trading strategy and the Code Agent writes the MQL5 code</div>
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50 cursor-pointer">
           <div className="text-sm font-medium text-foreground">Backtest a strategy</div>
@@ -24,7 +24,7 @@ export function EmptyState() {
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50 cursor-pointer">
           <div className="text-sm font-medium text-foreground">Research trading strategies</div>
-          <div className="text-xs text-muted-foreground">Nemotron Ultra searches for the latest techniques and hands findings to Nex N2 Pro</div>
+          <div className="text-xs text-muted-foreground">The Research Agent searches for current techniques and prepares focused findings</div>
         </div>
         <div className="flex flex-col gap-2 rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50 cursor-pointer">
           <div className="text-sm font-medium text-foreground">Analyze risk & parameters</div>

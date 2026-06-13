@@ -94,7 +94,7 @@ export function AgentSteps({ phase, researchContent, agentMode = "general", sear
   const trailItems: string[] = [];
   if (phase !== "thinking") trailItems.push(`Router → ${meta.label}`);
   if (showSearching) trailItems.push(`${searchCount} parallel Serper queries`);
-  if (showSynth)     trailItems.push("Nemotron Ultra synthesizing");
+  if (showSynth)     trailItems.push("Research Agent synthesizing");
   if (showGenerating) trailItems.push(agentMode === "code" ? "Writing code..." : agentMode === "research" ? "Synthesizing answer..." : "Writing response...");
 
   return (
@@ -152,7 +152,7 @@ export function AgentSteps({ phase, researchContent, agentMode = "general", sear
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:120ms]" />
                 <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-bounce [animation-delay:240ms]" />
               </span>
-              Nemotron Ultra analyzing sources...
+              Research Agent analyzing sources...
             </div>
           )}
         </StepRow>

@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, conversations, messages, memories } from "@workspace/db";
-import { openrouter } from "@workspace/integrations-openrouter-ai";
+import { groq } from "@workspace/integrations-openrouter-ai";
 import {
   GetOpenrouterConversationParams,
   DeleteOpenrouterConversationParams,
@@ -16,8 +16,9 @@ import {
 const router: IRouter = Router();
 
 // ── Models ────────────────────────────────────────────────────────────────────
-const RESEARCHER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free";
-const CODER_MODEL = "nex-agi/nex-n2-pro:free";
+const RESEARCHER_MODEL = "llama-3.3-70b-versatile";
+const CODER_MODEL = "llama-3.3-70b-versatile";
+const FAST_MODEL = "llama-3.1-8b-instant";
 
 // ── Search Cache (5-minute TTL) ───────────────────────────────────────────────
 interface CacheEntry {
@@ -236,8 +237,8 @@ async function extractAndStoreMemories(userMsg: string, aiReply: string): Promis
 User: ${userMsg.slice(0, 400)}
 AI: ${aiReply.slice(0, 400)}`;
 
-    const resp = await openrouter.chat.completions.create({
-      model: CODER_MODEL,
+    const resp = await groq.chat.completions.create({
+      model: FAST_MODEL,
       max_tokens: 100,
       messages: [{ role: "user", content: prompt }],
       stream: false,
@@ -264,8 +265,8 @@ AI: ${aiReply.slice(0, 400)}`;
 // ── REST routes ───────────────────────────────────────────────────────────────
 
 const AVAILABLE_MODELS = [
-  { id: CODER_MODEL, name: "Nex N2 Pro", description: "Advanced reasoning model — code & execution", isFree: true },
-  { id: RESEARCHER_MODEL, name: "Nemotron 3 Ultra", description: "NVIDIA's 550B ultra-large model — research & analysis", isFree: true },
+  { id: CODER_MODEL, name: "Llama 3.3 70B", description: "Groq-hosted model for code, research, and general chat", isFree: true },
+  { id: FAST_MODEL, name: "Llama 3.1 8B Instant", description: "Fast Groq-hosted model for lightweight tasks", isFree: true },
 ];
 
 router.get("/openrouter/models", async (_req, res): Promise<void> => {
@@ -377,7 +378,7 @@ router.post("/openrouter/conversations/:id/messages", async (req, res): Promise<
       const researchMessages: { role: "user" | "assistant" | "system"; content: string }[] = [
         {
           role: "system",
-          content: `You are Nemotron Ultra, a research specialist in trading, finance, MQL5/MetaTrader 5, and technical analysis. Analyze the user's request along with the web search results provided and produce concise, structured research findings that will guide the Code Agent's response.
+          content: `You are a research specialist in trading, finance, MQL5/MetaTrader 5, and technical analysis. Analyze the user's request along with the web search results provided and produce concise, structured research findings that will guide the Code Agent's response.
 
 Today: ${today}${memoryBlock}
 
@@ -396,7 +397,7 @@ Output 4-8 bullet points of the most actionable findings. Do NOT write any final
         },
       ];
 
-      const researchStream = await openrouter.chat.completions.create({
+      const researchStream = await groq.chat.completions.create({
         model: RESEARCHER_MODEL,
         max_tokens: 2048,
         messages: researchMessages,
@@ -412,12 +413,12 @@ Output 4-8 bullet points of the most actionable findings. Do NOT write any final
       }
     }
 
-    // ── Code / General Agent: Nex N2 Pro generates final response ────────────
-    const agentName = agentMode === "code" ? "Code Agent" : agentMode === "research" ? "Nex N2 Pro" : "General Agent";
+    // ── Code / General Agent: Llama generates final response ─────────────────
+    const agentName = agentMode === "code" ? "Code Agent" : agentMode === "research" ? "Llama 3.3 70B" : "General Agent";
     send({ phase: "generating", agent: agentName });
 
     const systemPrompts: Record<AgentMode, string> = {
-      research: `You are Nex N2 Pro, a highly capable AI assistant specializing in trading, algorithmic strategies, MQL5/MetaTrader 5 Expert Advisor development, and quantitative analysis. You have been given research findings from Nemotron Ultra (your research partner) and web search results to help craft the best possible response.
+      research: `You are a highly capable AI assistant specializing in trading, algorithmic strategies, MQL5/MetaTrader 5 Expert Advisor development, and quantitative analysis. You have been given research findings from a research agent and web search results to help craft the best possible response.
 
 Today: ${today}${memoryBlock}
 
@@ -435,12 +436,12 @@ MQL5 code guidelines:
 - Handle errors gracefully with meaningful comments
 - Respect user's SL/TP preferences
 ${CLARIFY_INSTRUCTIONS}
-## Research findings from Nemotron Ultra:
+## Research findings:
 ---
 ${researchOutput}
 ---`,
 
-      code: `You are Nex N2 Pro — Code Agent. You specialize in writing production-ready MQL5/MetaTrader 5 Expert Advisors, trading scripts, and custom indicators.
+      code: `You are the Code Agent. You specialize in writing production-ready MQL5/MetaTrader 5 Expert Advisors, trading scripts, and custom indicators.
 
 Today: ${today}${memoryBlock}
 
@@ -453,7 +454,7 @@ Guidelines:
 - Handle edge cases: market closed, insufficient margin, spread checks
 ${CLARIFY_INSTRUCTIONS}`,
 
-      general: `You are Nex N2 Pro, a friendly and knowledgeable AI assistant. Respond naturally and concisely. For simple greetings or short questions, keep your reply brief and conversational. For technical topics, be thorough but not verbose.
+      general: `You are a friendly and knowledgeable AI assistant. Respond naturally and concisely. For simple greetings or short questions, keep your reply brief and conversational. For technical topics, be thorough but not verbose.
 
 Today: ${today}${memoryBlock}`,
     };
@@ -469,7 +470,7 @@ Today: ${today}${memoryBlock}`,
     let fullResponse = "";
     const maxTokens = agentMode === "general" ? 512 : 8192;
 
-    const coderStream = await openrouter.chat.completions.create({
+    const coderStream = await groq.chat.completions.create({
       model: CODER_MODEL,
       max_tokens: maxTokens,
       messages: coderMessages,
