@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { ChevronDown, Menu, PanelLeftOpen } from "lucide-react";
+import { ChevronDown, Menu, PanelLeftOpen, SquarePen } from "lucide-react";
 import { 
   useGetOpenrouterConversation,
   useListOpenrouterMessages,
@@ -243,19 +243,6 @@ export default function ChatPage() {
               <Sidebar onCollapse={() => setMobileSidebarOpen(false)} />
             </SheetContent>
           </Sheet>
-          {!sidebarOpen && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hidden md:inline-flex"
-              onClick={() => setSidebarOpen(true)}
-              title="Open sidebar"
-            >
-              <PanelLeftOpen className="h-5 w-5" />
-              <span className="sr-only">Open sidebar</span>
-            </Button>
-          )}
-          
           <div className="flex min-w-0 items-center gap-1.5">
             <div className="truncate text-base font-semibold text-foreground">
               NexChat
@@ -269,10 +256,33 @@ export default function ChatPage() {
       </header>
 
       <div className="flex flex-1 overflow-hidden min-w-0">
-        {sidebarOpen && (
+        {sidebarOpen ? (
           <div className="hidden w-[260px] shrink-0 md:block">
             <Sidebar onCollapse={() => setSidebarOpen(false)} />
           </div>
+        ) : (
+          <aside className="hidden w-14 shrink-0 flex-col items-center gap-2 bg-sidebar py-3 md:flex">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setSidebarOpen(true)}
+              className="h-9 w-9 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              title="Open sidebar"
+            >
+              <PanelLeftOpen className="h-5 w-5" />
+              <span className="sr-only">Open sidebar</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setLocation("/")}
+              className="h-9 w-9 text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              title="New chat"
+            >
+              <SquarePen className="h-5 w-5" />
+              <span className="sr-only">New chat</span>
+            </Button>
+          </aside>
         )}
 
         <div className="flex flex-1 flex-col min-w-0">

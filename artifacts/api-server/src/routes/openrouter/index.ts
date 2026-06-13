@@ -316,10 +316,25 @@ router.get("/openrouter/conversations/:id", async (req, res): Promise<void> => {
 router.delete("/openrouter/conversations/:id", async (req, res): Promise<void> => {
   const params = DeleteOpenrouterConversationParams.safeParse(req.params);
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
-  await db.delete(messages).where(eq(messages.conversationId, params.data.id));
-  const [deleted] = await db.delete(conversations).where(eq(conversations.id, params.data.id)).returning();
-  if (!deleted) { res.status(404).json({ error: "Conversation not found" }); return; }
-  res.sendStatus(204);
+
+  try {
+    const [existing] = await db
+      .select({ id: conversations.id })
+      .from(conversations)
+      .where(eq(conversations.id, params.data.id));
+
+    if (!existing) { res.status(404).json({ error: "Conversation not found" }); return; }
+
+    await db.transaction(async (tx) => {
+      await tx.delete(messages).where(eq(messages.conversationId, params.data.id));
+      await tx.delete(conversations).where(eq(conversations.id, params.data.id));
+    });
+
+    res.status(200).json({ deleted: true, id: params.data.id });
+  } catch (err) {
+    req.log.error({ err, conversationId: params.data.id }, "Failed to delete conversation");
+    res.status(500).json({ error: "The server could not delete this conversation." });
+  }
 });
 
 router.patch("/openrouter/conversations/:id", async (req, res): Promise<void> => {

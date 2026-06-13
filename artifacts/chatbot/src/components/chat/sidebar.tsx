@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { useState, useEffect } from "react";
 import {
   useListOpenrouterConversations,
-  useDeleteOpenrouterConversation,
   useRenameOpenrouterConversation,
   getListOpenrouterConversationsQueryKey,
 } from "@workspace/api-client-react";
@@ -169,7 +168,6 @@ export function Sidebar({ onCollapse }: SidebarProps) {
   const queryClient = useQueryClient();
   
   const { data: conversations, isLoading } = useListOpenrouterConversations();
-  const deleteConversation = useDeleteOpenrouterConversation();
   const renameConversation = useRenameOpenrouterConversation();
   const conversationList = Array.isArray(conversations) ? conversations : [];
 
@@ -180,6 +178,7 @@ export function Sidebar({ onCollapse }: SidebarProps) {
   const [backtestOpen, setBacktestOpen] = useState(false);
   const [chatToDelete, setChatToDelete] = useState<{ id: number; title: string } | null>(null);
   const [deleteError, setDeleteError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const requestDelete = (e: React.MouseEvent, id: number, title: string) => {
     e.preventDefault();
@@ -189,13 +188,23 @@ export function Sidebar({ onCollapse }: SidebarProps) {
   };
 
   const confirmDelete = async () => {
-    if (!chatToDelete || deleteConversation.isPending) return;
+    if (!chatToDelete || isDeleting) return;
 
     const deletedId = chatToDelete.id;
     setDeleteError("");
+    setIsDeleting(true);
 
     try {
-      await deleteConversation.mutateAsync({ id: deletedId });
+      const response = await fetch(`/api/openrouter/conversations/${deletedId}`, {
+        method: "DELETE",
+        headers: { Accept: "application/json" },
+      });
+      const responseBody = await response.json().catch(() => null) as { error?: string } | null;
+
+      if (!response.ok) {
+        throw new Error(responseBody?.error || `Delete failed with status ${response.status}`);
+      }
+
       queryClient.setQueryData(
         getListOpenrouterConversationsQueryKey(),
         (old: unknown) => Array.isArray(old) ? old.filter((conv) => conv.id !== deletedId) : old,
@@ -205,7 +214,9 @@ export function Sidebar({ onCollapse }: SidebarProps) {
       setChatToDelete(null);
     } catch (error) {
       console.error("Failed to delete conversation:", error);
-      setDeleteError("Could not delete this chat. Please try again.");
+      setDeleteError(error instanceof Error ? error.message : "Could not delete this chat.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -373,7 +384,7 @@ export function Sidebar({ onCollapse }: SidebarProps) {
       <BacktestPanel open={backtestOpen} onOpenChange={setBacktestOpen} />
 
       <AlertDialog open={chatToDelete !== null} onOpenChange={(open) => {
-        if (!open && !deleteConversation.isPending) setChatToDelete(null);
+        if (!open && !isDeleting) setChatToDelete(null);
       }}>
         <AlertDialogContent className="max-w-md">
           <AlertDialogHeader>
@@ -384,16 +395,16 @@ export function Sidebar({ onCollapse }: SidebarProps) {
             {deleteError && <p className="text-sm text-destructive">{deleteError}</p>}
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={deleteConversation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(event) => {
                 event.preventDefault();
                 void confirmDelete();
               }}
-              disabled={deleteConversation.isPending}
+              disabled={isDeleting}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteConversation.isPending ? "Deleting..." : "Delete"}
+              {isDeleting ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
