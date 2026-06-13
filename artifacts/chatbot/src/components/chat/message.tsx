@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { Check, Copy, User, Bot, ChevronRight, FlaskConical } from "lucide-react";
+import { Check, Copy, User, Bot, ChevronRight, ChevronDown, Lightbulb } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import type { OpenrouterMessage } from "@workspace/api-client-react/src/generated/api.schemas";
@@ -150,38 +150,24 @@ export function ChatMessage({ message, isStreaming, thoughts, onQuickSend }: Mes
         </div>
 
         {thoughts && (
-          <div className="mb-1 rounded-lg border border-border/50 bg-muted/20 overflow-hidden">
+          <div className="mb-2 rounded-xl border border-border/60 bg-zinc-900/80 overflow-hidden">
             <button
               onClick={() => setThoughtsOpen((o) => !o)}
-              className="flex w-full items-center gap-2 px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
+              className="flex w-full items-center gap-3 px-4 py-3 text-sm hover:bg-white/5 transition-colors"
             >
-              <ChevronRight
-                className={`h-3.5 w-3.5 shrink-0 transition-transform duration-200 ${
-                  thoughtsOpen ? "rotate-90" : ""
-                }`}
-              />
-              <FlaskConical className="h-3.5 w-3.5 shrink-0 text-blue-400" />
-              <span className="font-medium">
-                {isStreaming && !thoughtsOpen
-                  ? "Nemotron Ultra is researching…"
-                  : "Nemotron Ultra's research"}
-              </span>
-              {isStreaming && (
-                <span className="ml-auto flex gap-0.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:0ms]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:150ms]" />
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-400 animate-bounce [animation-delay:300ms]" />
-                </span>
-              )}
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/15 text-amber-400 shrink-0">
+                <Lightbulb className="h-4 w-4" />
+              </div>
+              <span className="flex-1 text-left font-medium text-foreground/90">Think</span>
+              {thoughtsOpen
+                ? <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
             </button>
 
             {thoughtsOpen && (
-              <div className="border-t border-border/40 px-3 py-3">
-                <pre className="whitespace-pre-wrap font-mono text-[11px] leading-relaxed text-muted-foreground/90 max-h-[360px] overflow-y-auto">
+              <div className="border-t border-border/40 px-4 py-3">
+                <pre className="whitespace-pre-wrap font-mono text-[11.5px] leading-relaxed text-muted-foreground/85 max-h-[320px] overflow-y-auto">
                   {thoughts}
-                  {isStreaming && (
-                    <span className="inline-block h-3 w-1.5 animate-pulse bg-blue-400 align-middle ml-0.5" />
-                  )}
                 </pre>
               </div>
             )}

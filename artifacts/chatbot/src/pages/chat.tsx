@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
-import { Search, Loader2, Menu, Activity, Bot } from "lucide-react";
+import { Menu } from "lucide-react";
 import { 
   useGetOpenrouterConversation,
   useListOpenrouterMessages,
@@ -18,6 +18,7 @@ import { Sidebar } from "@/components/chat/sidebar";
 import { ChatMessage } from "@/components/chat/message";
 import { MessageInput } from "@/components/chat/message-input";
 import { EmptyState } from "@/components/chat/empty-state";
+import { AgentSteps } from "@/components/chat/agent-steps";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
@@ -269,14 +270,7 @@ export default function ChatPage() {
 
           <div className="shrink-0 bg-background pt-2 p-4 md:px-8 max-w-4xl mx-auto w-full">
             {isStreaming && streamingPhase !== "idle" && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3 px-2">
-                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
-                  <Bot className="h-4 w-4 animate-pulse" />
-                </div>
-                {streamingPhase === "researching" 
-                  ? "Researching..." 
-                  : "Nex N2 Pro is writing..."}
-              </div>
+              <AgentSteps phase={streamingPhase} researchContent={researchContent} />
             )}
             <MessageInput onSend={handleSend} disabled={isStreaming} />
           </div>
