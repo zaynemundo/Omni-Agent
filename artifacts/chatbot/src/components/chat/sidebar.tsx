@@ -17,6 +17,16 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { BacktestPanel } from "./backtest-panel";
 
 interface Memory {
@@ -164,15 +174,24 @@ export function Sidebar() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [backtestOpen, setBacktestOpen] = useState(false);
+  const [chatToDelete, setChatToDelete] = useState<{ id: number; title: string } | null>(null);
 
-  const handleDelete = (e: React.MouseEvent, id: number) => {
+  const requestDelete = (e: React.MouseEvent, id: number, title: string) => {
     e.preventDefault();
     e.stopPropagation();
-    deleteConversation.mutate({ id }, {
+    setChatToDelete({ id, title });
+  };
+
+  const confirmDelete = () => {
+    if (!chatToDelete || deleteConversation.isPending) return;
+
+    const deletedId = chatToDelete.id;
+    deleteConversation.mutate({ id: deletedId }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListOpenrouterConversationsQueryKey() });
-        if (currentId === id) setLocation("/");
-      }
+        if (currentId === deletedId) setLocation("/");
+        setChatToDelete(null);
+      },
     });
   };
 
@@ -292,7 +311,7 @@ export function Sidebar() {
                           <Edit2 className="mr-2 h-4 w-4" />
                           Rename
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => handleDelete(e, conv.id)} className="text-destructive focus:bg-destructive/10">
+                        <DropdownMenuItem onClick={(e) => requestDelete(e, conv.id, conv.title)} className="text-destructive focus:bg-destructive/10">
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>
@@ -321,6 +340,32 @@ export function Sidebar() {
       </div>
 
       <BacktestPanel open={backtestOpen} onOpenChange={setBacktestOpen} />
+
+      <AlertDialog open={chatToDelete !== null} onOpenChange={(open) => {
+        if (!open && !deleteConversation.isPending) setChatToDelete(null);
+      }}>
+        <AlertDialogContent className="max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete chat?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete “{chatToDelete?.title}” and its messages. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteConversation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => {
+                event.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleteConversation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteConversation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
