@@ -376,7 +376,7 @@ export function Sidebar({ onCollapse }: SidebarProps) {
           </div>
           <div className="min-w-0">
             <div className="text-sm font-medium">User</div>
-            <div className="truncate text-[10px] text-sidebar-foreground/40">Groq workspace</div>
+            <div className="truncate text-[10px] text-sidebar-foreground/40">OpenRouter workspace</div>
           </div>
         </div>
       </div>

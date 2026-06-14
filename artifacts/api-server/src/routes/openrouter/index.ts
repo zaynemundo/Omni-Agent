@@ -1,7 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq } from "drizzle-orm";
 import { db, conversations, messages, memories } from "@workspace/db";
-import { groq } from "@workspace/integrations-openrouter-ai";
+import { openrouter } from "@workspace/integrations-openrouter-ai";
 import {
   GetOpenrouterConversationParams,
   DeleteOpenrouterConversationParams,
@@ -16,27 +16,27 @@ import {
 const router: IRouter = Router();
 
 // ── Models ────────────────────────────────────────────────────────────────────
-const RESEARCHER_MODEL = "llama-3.3-70b-versatile";
-const CODER_MODEL = "llama-3.3-70b-versatile";
-const FAST_MODEL = "llama-3.1-8b-instant";
+const RESEARCHER_MODEL = "nvidia/nemotron-3-ultra-550b-a55b:free";
+const CODER_MODEL = "nex-agi/nex-n2-pro:free";
+const FAST_MODEL = CODER_MODEL;
 
 function getAiErrorMessage(err: unknown): string {
   const error = err as { status?: number; message?: string };
 
   if (error.status === 401) {
-    return "Groq rejected the API key. Replace GROQ_API_KEY in Replit Secrets, then restart the app.";
+    return "OpenRouter rejected the API key. Replace OPENROUTER_API_KEY in Replit Secrets, then restart the app.";
   }
   if (error.status === 403) {
-    return "This Groq project does not have permission to use the selected model.";
+    return "This OpenRouter account does not have permission to use the selected model.";
   }
   if (error.status === 429) {
-    return "Groq's free-tier rate limit has been reached. Wait briefly and try again.";
+    return "OpenRouter's free-model rate limit has been reached. Wait briefly and try again.";
   }
   if (error.status === 404 || error.message?.toLowerCase().includes("model")) {
-    return "The configured Groq model is unavailable. Check the model settings and try again.";
+    return "The configured OpenRouter model is unavailable. Check the model settings and try again.";
   }
 
-  return "Groq could not generate a response. Check the Replit console for details.";
+  return "OpenRouter could not generate a response. Check the Replit console for details.";
 }
 
 // ── Search Cache (5-minute TTL) ───────────────────────────────────────────────
@@ -256,7 +256,7 @@ async function extractAndStoreMemories(userMsg: string, aiReply: string): Promis
 User: ${userMsg.slice(0, 400)}
 AI: ${aiReply.slice(0, 400)}`;
 
-    const resp = await groq.chat.completions.create({
+    const resp = await openrouter.chat.completions.create({
       model: FAST_MODEL,
       max_tokens: 100,
       messages: [{ role: "user", content: prompt }],
@@ -284,8 +284,8 @@ AI: ${aiReply.slice(0, 400)}`;
 // ── REST routes ───────────────────────────────────────────────────────────────
 
 const AVAILABLE_MODELS = [
-  { id: CODER_MODEL, name: "Llama 3.3 70B", description: "Groq-hosted model for code, research, and general chat", isFree: true },
-  { id: FAST_MODEL, name: "Llama 3.1 8B Instant", description: "Fast Groq-hosted model for lightweight tasks", isFree: true },
+  { id: CODER_MODEL, name: "Nex N2 Pro", description: "OpenRouter free model for code and general chat", isFree: true },
+  { id: RESEARCHER_MODEL, name: "Nemotron 3 Ultra", description: "OpenRouter free model for research and analysis", isFree: true },
 ];
 
 router.get("/openrouter/models", async (_req, res): Promise<void> => {
@@ -432,7 +432,7 @@ Output 4-8 bullet points of the most actionable findings. Do NOT write any final
         },
       ];
 
-      const researchStream = await groq.chat.completions.create({
+      const researchStream = await openrouter.chat.completions.create({
         model: RESEARCHER_MODEL,
         max_tokens: 2048,
         messages: researchMessages,
@@ -505,7 +505,7 @@ Today: ${today}${memoryBlock}`,
     let fullResponse = "";
     const maxTokens = agentMode === "general" ? 512 : 8192;
 
-    const coderStream = await groq.chat.completions.create({
+    const coderStream = await openrouter.chat.completions.create({
       model: CODER_MODEL,
       max_tokens: maxTokens,
       messages: coderMessages,
@@ -521,7 +521,7 @@ Today: ${today}${memoryBlock}`,
     }
 
     if (!fullResponse.trim()) {
-      throw new Error("Groq returned an empty response");
+      throw new Error("OpenRouter returned an empty response");
     }
 
     await db.insert(messages).values({

@@ -10,13 +10,13 @@ import pRetry, { AbortError } from "p-retry";
  * USAGE:
  * ```typescript
  * import { batchProcess } from "@workspace/integrations-openrouter-ai/batch";
- * import { groq } from "@workspace/integrations-openrouter-ai";
+ * import { openrouter } from "@workspace/integrations-openrouter-ai";
  *
  * const results = await batchProcess(
  *   artworks,
  *   async (artwork) => {
- *     const response = await groq.chat.completions.create({
- *       model: "llama-3.3-70b-versatile",
+ *     const response = await openrouter.chat.completions.create({
+ *       model: "nex-agi/nex-n2-pro:free",
  *       messages: [{ role: "user", content: `Categorize: ${artwork.name}` }],
  *     });
  *     return response.choices[0]?.message?.content || "";

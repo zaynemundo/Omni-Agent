@@ -170,7 +170,7 @@ export default function ChatPage() {
                     setResearchContent((prev) => prev + (data.content || ""));
                   } else if (data.phase === "generating") {
                     setStreamingPhase("generating");
-                    setStreamingAgent(data.agent || "Llama 3.3 70B");
+                    setStreamingAgent(data.agent || "Nex N2 Pro");
                   } else if (data.content) {
                     setStreamingPhase("generating");
                     setStreamingContent((prev) => prev + data.content);
@@ -223,7 +223,7 @@ export default function ChatPage() {
       conversationId: currentId || 0,
       role: "assistant",
       content: streamingContent,
-      model: `llama-3.3-70b-versatile|${agentMode}`,
+      model: `nex-agi/nex-n2-pro:free|${agentMode}`,
       createdAt: new Date().toISOString(),
     });
   }

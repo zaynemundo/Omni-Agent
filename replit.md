@@ -11,7 +11,7 @@ _Replace the heading above with the project's name, and this line with one sente
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
 
-- Required env: `GROQ_API_KEY` - Groq API key used for AI responses
+- Required env: `OPENROUTER_API_KEY` - OpenRouter API key used for AI responses
 - Optional env: `SERPER_API_KEY` - enables Google-backed web search
 
 ## Stack
