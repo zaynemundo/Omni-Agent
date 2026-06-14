@@ -532,10 +532,24 @@ Today: ${today}${memoryBlock}`,
     });
 
     if (conv.title === "New Conversation" || conv.title.startsWith("New Conversation")) {
-      const firstUserMsg = content.slice(0, 60);
+      const cleanedTitle = content
+        .replace(/```[\s\S]*?```/g, " code ")
+        .replace(/https?:\/\/\S+/g, "")
+        .replace(/[`*_#>|[\]{}()]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .replace(/^(?:please\s+)?(?:can|could|would|will)\s+you\s+/i, "")
+        .replace(/^(?:please\s+)?(?:help\s+me(?:\s+to)?|i\s+(?:want|need)\s+to)\s+/i, "")
+        .replace(/^(?:please\s+)/i, "")
+        .replace(/[.!?,:;]+$/g, "")
+        .trim();
+      const firstUserMsg = cleanedTitle.length > 44
+        ? cleanedTitle.slice(0, 45).replace(/\s+\S*$/, "").trim()
+        : cleanedTitle;
+      const normalizedTitle = firstUserMsg || "New chat";
       await db
         .update(conversations)
-        .set({ title: firstUserMsg + (content.length > 60 ? "…" : "") })
+        .set({ title: normalizedTitle.charAt(0).toUpperCase() + normalizedTitle.slice(1) })
         .where(eq(conversations.id, conversationId));
     }
 

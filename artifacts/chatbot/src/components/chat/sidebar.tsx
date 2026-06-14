@@ -345,7 +345,7 @@ export function Sidebar({ onCollapse }: SidebarProps) {
                           size="icon"
                           onClick={(event) => event.stopPropagation()}
                           aria-label={`Open options for ${conv.title}`}
-                          className="absolute right-2 top-1/2 z-10 h-7 w-7 -translate-y-1/2 bg-sidebar text-sidebar-foreground/70 opacity-100 shadow-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-foreground"
+                          className="absolute right-2 top-1/2 z-10 h-7 w-7 -translate-y-1/2 bg-sidebar text-sidebar-foreground/70 opacity-100 shadow-sm transition-[opacity,background-color,color] hover:bg-sidebar-accent hover:text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-foreground md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 md:data-[state=open]:opacity-100"
                         >
                           <MoreHorizontal className="h-4 w-4" />
                           <span className="sr-only">More</span>

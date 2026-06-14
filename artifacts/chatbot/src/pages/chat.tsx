@@ -21,6 +21,30 @@ import { AgentSteps } from "@/components/chat/agent-steps";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
+function createConversationTitle(content: string) {
+  const cleaned = content
+    .replace(/```[\s\S]*?```/g, " code ")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[`*_#>|[\]{}()]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^(?:please\s+)?(?:can|could|would|will)\s+you\s+/i, "")
+    .replace(/^(?:please\s+)?(?:help\s+me(?:\s+to)?|i\s+(?:want|need)\s+to)\s+/i, "")
+    .replace(/^(?:please\s+)/i, "")
+    .replace(/[.!?,:;]+$/g, "")
+    .trim();
+
+  if (!cleaned) return "New chat";
+
+  const maxLength = 44;
+  const shortened = cleaned.length <= maxLength
+    ? cleaned
+    : cleaned.slice(0, maxLength + 1).replace(/\s+\S*$/, "").trim();
+  const title = shortened || cleaned.slice(0, maxLength).trim();
+
+  return title.charAt(0).toUpperCase() + title.slice(1);
+}
+
 export default function ChatPage() {
   const [, setLocation] = useLocation();
   const params = useParams<{ id?: string }>();
@@ -71,7 +95,7 @@ export default function ChatPage() {
     if (!convId) {
       try {
         const newConv = await createConversation.mutateAsync({
-          data: { title: content.slice(0, 30) + (content.length > 30 ? "..." : "") }
+          data: { title: createConversationTitle(content) }
         });
         convId = newConv.id;
         queryClient.invalidateQueries({ queryKey: getListOpenrouterConversationsQueryKey() });
