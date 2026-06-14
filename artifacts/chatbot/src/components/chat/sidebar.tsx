@@ -180,9 +180,7 @@ export function Sidebar({ onCollapse }: SidebarProps) {
   const [deleteError, setDeleteError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const requestDelete = (e: React.MouseEvent, id: number, title: string) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const requestDelete = (id: number, title: string) => {
     setDeleteError("");
     setChatToDelete({ id, title });
   };
@@ -339,11 +337,15 @@ export function Sidebar({ onCollapse }: SidebarProps) {
                       <div className="truncate text-left flex-1">{conv.title}</div>
                     </div>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenuTrigger
+                        asChild
+                        onClick={(event) => event.stopPropagation()}
+                        onPointerDown={(event) => event.stopPropagation()}
+                      >
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 ml-1 data-[state=open]:opacity-100"
+                          className="ml-1 h-7 w-7 shrink-0 text-sidebar-foreground/55 opacity-100 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-foreground"
                         >
                           <MoreHorizontal className="h-3.5 w-3.5" />
                           <span className="sr-only">More</span>
@@ -354,7 +356,10 @@ export function Sidebar({ onCollapse }: SidebarProps) {
                           <Edit2 className="mr-2 h-4 w-4" />
                           Rename
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={(e) => requestDelete(e, conv.id, conv.title)} className="text-destructive focus:bg-destructive/10">
+                        <DropdownMenuItem
+                          onSelect={() => requestDelete(conv.id, conv.title)}
+                          className="text-destructive focus:bg-destructive/10"
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete
                         </DropdownMenuItem>

@@ -256,12 +256,26 @@ export default function ChatPage() {
       </header>
 
       <div className="flex flex-1 overflow-hidden min-w-0">
-        {sidebarOpen ? (
-          <div className="hidden w-[260px] shrink-0 md:block">
+        <div
+          className={`relative hidden shrink-0 overflow-hidden bg-sidebar transition-[width] duration-300 ease-in-out md:block ${
+            sidebarOpen ? "w-[260px]" : "w-14"
+          }`}
+        >
+          <div
+            aria-hidden={!sidebarOpen}
+            className={`absolute inset-y-0 left-0 w-[260px] transition-[transform,opacity] duration-300 ease-in-out ${
+              sidebarOpen ? "translate-x-0 opacity-100" : "-translate-x-6 pointer-events-none opacity-0"
+            }`}
+          >
             <Sidebar onCollapse={() => setSidebarOpen(false)} />
           </div>
-        ) : (
-          <aside className="hidden w-14 shrink-0 flex-col items-center gap-2 bg-sidebar py-3 md:flex">
+
+          <aside
+            aria-hidden={sidebarOpen}
+            className={`absolute inset-y-0 left-0 flex w-14 flex-col items-center gap-2 bg-sidebar py-3 transition-opacity duration-200 ${
+              sidebarOpen ? "pointer-events-none opacity-0" : "opacity-100 delay-150"
+            }`}
+          >
             <Button
               variant="ghost"
               size="icon"
@@ -283,7 +297,7 @@ export default function ChatPage() {
               <span className="sr-only">New chat</span>
             </Button>
           </aside>
-        )}
+        </div>
 
         <div className="flex flex-1 flex-col min-w-0">
           <div className="flex-1 overflow-y-auto min-h-0 relative">
