@@ -248,12 +248,12 @@ export function Sidebar({ onCollapse }: SidebarProps) {
 
   return (
     <div className="flex h-full w-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className="flex h-14 items-center justify-between px-3">
+      <div className="flex h-16 items-center justify-between px-3">
         <div className="flex items-center gap-2 px-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-sidebar-foreground text-xs font-semibold text-sidebar">
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-foreground text-sm font-semibold text-sidebar">
             N
           </span>
-          <div className="text-sm font-semibold text-sidebar-foreground">NexChat</div>
+          <div className="text-base font-semibold text-sidebar-foreground">NexChat</div>
         </div>
         <Button
           variant="ghost"
@@ -267,10 +267,10 @@ export function Sidebar({ onCollapse }: SidebarProps) {
         </Button>
       </div>
       
-      <div className="space-y-1 px-2 pb-3">
+      <div className="space-y-1 px-3 pb-4">
         <Button 
-          variant="ghost"
-          className="w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent"
+          variant="outline"
+          className="h-11 w-full justify-start gap-3 border-sidebar-border bg-sidebar-accent/30 text-sidebar-foreground hover:bg-sidebar-accent"
           onClick={() => setLocation("/")}
         >
           <Plus className="h-4 w-4" />
@@ -278,7 +278,7 @@ export function Sidebar({ onCollapse }: SidebarProps) {
         </Button>
         <Button 
           variant="outline"
-          className="w-full justify-start gap-3 border-0 bg-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          className="h-10 w-full justify-start gap-3 border-0 bg-transparent text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
           onClick={() => setBacktestOpen(true)}
         >
           <Activity className="h-4 w-4" />
@@ -289,7 +289,7 @@ export function Sidebar({ onCollapse }: SidebarProps) {
       <ScrollArea className="flex-1">
         <div className="flex flex-col gap-1 px-2 py-2">
           <div className="mb-1 px-3 pt-2 text-xs font-medium text-sidebar-foreground/45">
-            Chats
+            Chat history
           </div>
           {isLoading ? (
             <div className="px-4 py-2 text-sm text-sidebar-foreground/50">Loading...</div>
@@ -328,26 +328,26 @@ export function Sidebar({ onCollapse }: SidebarProps) {
                       setLocation(`/c/${conv.id}`);
                     }
                   }}
-                    className={`group flex min-h-10 items-center justify-between rounded-md px-3 py-2 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer ${
+                  className={`group relative flex min-h-10 items-center rounded-md px-3 py-2 pr-12 text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground cursor-pointer ${
                       currentId === conv.id ? "bg-sidebar-accent text-sidebar-accent-foreground font-medium" : "text-sidebar-foreground/70"
                     }`}
                   >
-                    <div className="flex items-center gap-2 overflow-hidden flex-1">
+                    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden">
                       <MessageSquare className="h-4 w-4 shrink-0 opacity-50" />
-                      <div className="truncate text-left flex-1">{conv.title}</div>
+                      <div className="min-w-0 flex-1 truncate text-left">{conv.title}</div>
                     </div>
                     <DropdownMenu>
                       <DropdownMenuTrigger
                         asChild
-                        onClick={(event) => event.stopPropagation()}
-                        onPointerDown={(event) => event.stopPropagation()}
                       >
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="ml-1 h-7 w-7 shrink-0 text-sidebar-foreground/55 opacity-100 transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-foreground"
+                          onClick={(event) => event.stopPropagation()}
+                          aria-label={`Open options for ${conv.title}`}
+                          className="absolute right-2 top-1/2 z-10 h-7 w-7 -translate-y-1/2 bg-sidebar text-sidebar-foreground/70 opacity-100 shadow-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-foreground data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-foreground"
                         >
-                          <MoreHorizontal className="h-3.5 w-3.5" />
+                          <MoreHorizontal className="h-4 w-4" />
                           <span className="sr-only">More</span>
                         </Button>
                       </DropdownMenuTrigger>

@@ -216,6 +216,7 @@ export default function ChatPage() {
   };
 
   const displayMessages = [...(messages || [])];
+  const isEmptyConversation = !currentId && displayMessages.length === 0;
   
   if (isStreaming && streamingContent && streamingPhase === "generating") {
     displayMessages.push({
@@ -239,7 +240,7 @@ export default function ChatPage() {
                 <span className="sr-only">Toggle Sidebar</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[260px]">
+            <SheetContent side="left" className="w-[300px] p-0">
               <Sidebar onCollapse={() => setMobileSidebarOpen(false)} />
             </SheetContent>
           </Sheet>
@@ -258,12 +259,12 @@ export default function ChatPage() {
       <div className="flex flex-1 overflow-hidden min-w-0">
         <div
           className={`relative hidden shrink-0 overflow-hidden bg-sidebar transition-[width] duration-300 ease-in-out md:block ${
-            sidebarOpen ? "w-[260px]" : "w-14"
+            sidebarOpen ? "w-[300px]" : "w-14"
           }`}
         >
           <div
             aria-hidden={!sidebarOpen}
-            className={`absolute inset-y-0 left-0 w-[260px] transition-[transform,opacity] duration-300 ease-in-out ${
+            className={`absolute inset-y-0 left-0 w-[300px] transition-[transform,opacity] duration-300 ease-in-out ${
               sidebarOpen ? "translate-x-0 opacity-100" : "-translate-x-6 pointer-events-none opacity-0"
             }`}
           >
@@ -301,8 +302,10 @@ export default function ChatPage() {
 
         <div className="flex flex-1 flex-col min-w-0">
           <div className="flex-1 overflow-y-auto min-h-0 relative">
-            {!currentId && displayMessages.length === 0 ? (
-              <EmptyState onSelectPrompt={handleSend} />
+            {isEmptyConversation ? (
+              <EmptyState onSelectPrompt={handleSend}>
+                <MessageInput onSend={handleSend} disabled={isStreaming} hero />
+              </EmptyState>
             ) : (
               <div className="pb-28">
                 {displayMessages.map((msg) => (
@@ -324,7 +327,7 @@ export default function ChatPage() {
             )}
           </div>
 
-          <div className="w-full shrink-0 bg-background px-3 pb-2 pt-3 md:px-8">
+          {!isEmptyConversation && <div className="w-full shrink-0 bg-background px-3 pb-2 pt-3 md:px-8">
             <div className="mx-auto w-full max-w-3xl">
               {isStreaming && streamingPhase !== "idle" && (
                 <AgentSteps
@@ -336,7 +339,7 @@ export default function ChatPage() {
               )}
               <MessageInput onSend={handleSend} disabled={isStreaming} />
             </div>
-          </div>
+          </div>}
         </div>
       </div>
     </div>

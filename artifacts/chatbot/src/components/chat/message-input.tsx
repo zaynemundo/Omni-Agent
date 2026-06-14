@@ -6,18 +6,19 @@ import { Textarea } from "@/components/ui/textarea";
 interface MessageInputProps {
   onSend: (content: string) => void;
   disabled?: boolean;
+  hero?: boolean;
 }
 
-export function MessageInput({ onSend, disabled }: MessageInputProps) {
+export function MessageInput({ onSend, disabled, hero = false }: MessageInputProps) {
   const [content, setContent] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
+      textareaRef.current.style.height = `${Math.max(hero ? 76 : 28, Math.min(textareaRef.current.scrollHeight, 200))}px`;
     }
-  }, [content]);
+  }, [content, hero]);
 
   const handleSend = () => {
     if (!content.trim() || disabled) return;
@@ -37,14 +38,16 @@ export function MessageInput({ onSend, disabled }: MessageInputProps) {
 
   return (
     <div className="relative flex w-full flex-col">
-      <div className="relative flex w-full items-end gap-3 rounded-[24px] border border-transparent bg-card px-4 py-3 shadow-[0_2px_14px_rgba(0,0,0,0.22)] transition-colors focus-within:border-border">
+      <div className={`relative flex w-full items-end gap-3 border bg-card px-4 shadow-[0_2px_14px_rgba(0,0,0,0.22)] transition-colors focus-within:border-ring/60 ${
+        hero ? "min-h-32 rounded-lg border-border py-4" : "rounded-lg border-transparent py-3"
+      }`}>
         <Textarea
           ref={textareaRef}
           value={content}
           onChange={(e) => setContent(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Message NexChat"
-          className="min-h-[28px] max-h-[200px] w-full resize-none border-0 bg-transparent p-0 py-1 text-sm leading-5 focus-visible:ring-0 placeholder:text-muted-foreground/60"
+          placeholder={hero ? "Ask about markets, strategies, or MQL5" : "Message NexChat"}
+          className={`${hero ? "min-h-[76px] text-base" : "min-h-[28px] text-sm"} max-h-[200px] w-full resize-none border-0 bg-transparent p-0 py-1 leading-5 focus-visible:ring-0 placeholder:text-muted-foreground/60`}
           rows={1}
           disabled={disabled}
         />
